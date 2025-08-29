@@ -1,4 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+
+
+import React, { useState, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { ClipboardIcon } from './icons/ClipboardIcon';
 import { CodeIcon } from './icons/CodeIcon';
 import { EyeIcon } from './icons/EyeIcon';
@@ -47,22 +51,12 @@ export const Output: React.FC<OutputProps> = ({ markdown, isLoading, isRefining,
     }
   };
 
-  const svgDataUri = useMemo(() => {
-    if (!markdown) return null;
-    const match = markdown.match(/!\[[^\]]*\]\((data:image\/svg\+xml[^)]*)\)/);
-    return match ? match[1] : null;
-  }, [markdown]);
-
   const renderContent = () => {
-    if (isLoading) {
+    if (isLoading && !markdown) {
       return (
         <div className="flex flex-col items-center justify-center text-center text-gray-400">
-           <svg className="animate-spin h-8 w-8 text-purple-400 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-          <p className="font-semibold">AI is crafting your masterpiece...</p>
-          <p className="text-sm">This can take a few moments for complex ideas.</p>
+          <p className="font-semibold">AI is starting to generate...</p>
+          <p className="text-sm">The code will appear here live as it's created.</p>
         </div>
       );
     }
@@ -71,15 +65,12 @@ export const Output: React.FC<OutputProps> = ({ markdown, isLoading, isRefining,
     }
     if (markdown) {
       if (activeTab === 'preview') {
-        return svgDataUri ? (
-          <div className="w-full h-full flex items-center justify-center p-4">
-             <img src={svgDataUri} alt="Generated SVG Preview" className="max-w-full max-h-full object-contain" />
-          </div>
-        ) : (
-          <div className="text-center text-gray-500 p-4">
-            <p>No SVG preview available for this output.</p>
-            <p className="text-sm mt-1">Switch to the 'Code' tab to see the raw Markdown.</p>
-          </div>
+        return (
+            <div className="markdown-preview p-6 w-full">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {markdown}
+                </ReactMarkdown>
+            </div>
         );
       }
       // Code tab
@@ -112,6 +103,63 @@ export const Output: React.FC<OutputProps> = ({ markdown, isLoading, isRefining,
 
   return (
     <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-lg shadow-lg flex flex-col h-full">
+      <style>{`
+          .markdown-preview h1, .markdown-preview h2, .markdown-preview h3, .markdown-preview h4, .markdown-preview h5, .markdown-preview h6 {
+            margin-top: 1.5em;
+            margin-bottom: 1em;
+            font-weight: 600;
+          }
+          .markdown-preview h1 { font-size: 2em; border-bottom: 1px solid #4a5568; padding-bottom: 0.3em; }
+          .markdown-preview h2 { font-size: 1.5em; border-bottom: 1px solid #4a5568; padding-bottom: 0.3em; }
+          .markdown-preview h3 { font-size: 1.25em; }
+          .markdown-preview p { line-height: 1.6; margin-bottom: 1em; }
+          .markdown-preview a { color: #a78bfa; text-decoration: none; }
+          .markdown-preview a:hover { text-decoration: underline; }
+          .markdown-preview code {
+            background-color: rgb(17 24 39 / 1);
+            color: #d1d5db;
+            padding: .2em .4em;
+            margin: 0;
+            font-size: 85%;
+            border-radius: 6px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+          }
+          .markdown-preview pre {
+            background-color: #111827;
+            padding: 1rem;
+            border-radius: 0.375rem;
+            overflow-x: auto;
+            margin-bottom: 1em;
+          }
+          .markdown-preview pre code {
+            padding: 0;
+            background-color: transparent;
+            color: inherit;
+          }
+          .markdown-preview img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            margin-top: 1em;
+            margin-bottom: 1em;
+            background-color: #fff;
+          }
+           .markdown-preview ul, .markdown-preview ol {
+            padding-left: 2em;
+            margin-bottom: 1em;
+          }
+          .markdown-preview li {
+            margin-bottom: 0.25em;
+          }
+          .markdown-preview blockquote {
+            padding: 0 1em;
+            color: #9ca3af;
+            border-left: 0.25em solid #4b5563;
+            margin-bottom: 1em;
+          }
+        `}</style>
       <div className="flex justify-between items-center p-4 border-b border-gray-700">
         <div className="flex items-end">
           <TabButton isActive={activeTab === 'preview'} onClick={() => setActiveTab('preview')}>
@@ -132,7 +180,7 @@ export const Output: React.FC<OutputProps> = ({ markdown, isLoading, isRefining,
         )}
       </div>
       
-      <div className="relative bg-gray-900 flex-grow min-h-[400px] lg:min-h-0 flex items-center justify-center">
+      <div className="relative bg-gray-900 flex-grow min-h-[400px] lg:min-h-0 flex items-start justify-center">
         <div className="w-full h-full max-h-[calc(100vh-400px)] overflow-auto">
              {renderContent()}
         </div>
@@ -160,15 +208,7 @@ export const Output: React.FC<OutputProps> = ({ markdown, isLoading, isRefining,
                   className="absolute right-2 bottom-2 bg-purple-600 text-white p-2 rounded-md hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
                   aria-label="Refine SVG"
                 >
-                  {isRefining ? (
-                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                  ) : (
-                    <SendIcon />
-                  )}
-                  
+                  <SendIcon />
                 </button>
               </div>
            </form>
