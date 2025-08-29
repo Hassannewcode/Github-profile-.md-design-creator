@@ -20,8 +20,8 @@ const SYSTEM_INSTRUCTION = `You are an elite creative coder and SVG artist with 
     *   If **Mode** is **'Animated'**: Create a dynamic, animated SVG.
     *   If **Mode** is **'Static'**: Create a beautiful but non-animated SVG. Ignore animation-related prompts.
 9.  **Animation Control (Animated Mode Only):**
-    *   **Speed:** Map 'Slow' to long durations (e.g., 10s-20s), 'Normal' to standard durations (e.g., 5s-10s), and 'Fast' to short durations (e.g., 1s-4s).
-    *   **Direction:** Use the value directly for the \`animation-direction\` CSS property.
+    *   **Speed:** Map 'Slow' to long durations (e.g., 10s-20s), 'Normal' to standard durations (e.g., 5s-10s), and 'Fast' to short durations (e.g., 1s-4s). If set to 'Auto', you must intelligently select the most aesthetically pleasing and appropriate speed based on the user's creative idea.
+    *   **Direction:** Use the value directly for the \`animation-direction\` CSS property. If set to 'Auto', you must choose the most fitting and visually appealing animation direction from the available CSS values (normal, reverse, alternate, alternate-reverse).
 
 **Accessibility First:**
 *   **Descriptions:** Your top priority is to include descriptive \`<title>\` and \`<desc>\` elements inside the SVG tag. This is non-negotiable.
@@ -76,8 +76,8 @@ const App: React.FC = () => {
   const [chat, setChat] = useState<Chat | null>(null);
   const [isChatModeEnabled, setIsChatModeEnabled] = useState<boolean>(savedState.current?.isChatModeEnabled ?? true);
   const [mode, setMode] = useState<'static' | 'animated'>(savedState.current?.mode || 'animated');
-  const [animationSpeed, setAnimationSpeed] = useState<string>(savedState.current?.animationSpeed || 'normal');
-  const [animationDirection, setAnimationDirection] = useState<string>(savedState.current?.animationDirection || 'normal');
+  const [animationSpeed, setAnimationSpeed] = useState<string>(savedState.current?.animationSpeed || 'auto');
+  const [animationDirection, setAnimationDirection] = useState<string>(savedState.current?.animationDirection || 'auto');
   
   // Resizable panel logic
   const containerRef = useRef<HTMLDivElement>(null);
@@ -195,21 +195,17 @@ const App: React.FC = () => {
     setGithubToken('');
     setIsChatModeEnabled(true);
     setMode('animated');
-    setAnimationSpeed('normal');
-    setAnimationDirection('normal');
+    setAnimationSpeed('auto');
+    setAnimationDirection('auto');
   };
 
   const buildPrompt = (userPrompt: string): string => {
     let finalPrompt = `Mode: '${mode}'.\nUser's idea: "${userPrompt}".`;
 
-    if (mode === 'animated' && (animationSpeed !== 'normal' || animationDirection !== 'normal')) {
+    if (mode === 'animated') {
       finalPrompt += `\n\n**Animation Customization:**`;
-      if (animationSpeed !== 'normal') {
-        finalPrompt += `\n- Animation Speed: ${animationSpeed}`;
-      }
-      if (animationDirection !== 'normal') {
-        finalPrompt += `\n- Animation Direction: ${animationDirection}`;
-      }
+      finalPrompt += `\n- Animation Speed: ${animationSpeed}`;
+      finalPrompt += `\n- Animation Direction: ${animationDirection}`;
     }
     
     if (githubToken.trim()) {

@@ -154,6 +154,7 @@ export const Controls: React.FC<ControlsProps> = ({
             <div>
               <label htmlFor="animation-speed" className="block text-xs font-medium text-gray-400 mb-1.5">Speed</label>
               <select id="animation-speed" value={animationSpeed} onChange={(e) => setAnimationSpeed(e.target.value)} disabled={mode === 'static'} className="w-full bg-black/50 border border-white/10 rounded-md p-2 text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 text-sm appearance-none">
+                <option value="auto">Auto</option>
                 <option value="normal">Normal</option>
                 <option value="slow">Slow</option>
                 <option value="fast">Fast</option>
@@ -162,6 +163,7 @@ export const Controls: React.FC<ControlsProps> = ({
             <div>
               <label htmlFor="animation-direction" className="block text-xs font-medium text-gray-400 mb-1.5">Direction</label>
               <select id="animation-direction" value={animationDirection} onChange={(e) => setAnimationDirection(e.target.value)} disabled={mode === 'static'} className="w-full bg-black/50 border border-white/10 rounded-md p-2 text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 text-sm appearance-none">
+                <option value="auto">Auto</option>
                 <option value="normal">Normal</option>
                 <option value="reverse">Reverse</option>
                 <option value="alternate">Alternate</option>
