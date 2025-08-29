@@ -54,9 +54,9 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   const hasChatStarted = chatHistory.length > 0 || isRefining;
 
   const getPlaceholderText = () => {
-    if (isRefining) return "AI is designing...";
-    if (markdown) return "e.g., 'Add a section for my tech stack'";
-    return "Design a README first to start chatting...";
+    if (isRefining) return "AI is working...";
+    if (markdown) return "e.g., 'Add a section for my projects'";
+    return "Design a profile first to start chatting...";
   };
 
   return (
@@ -80,7 +80,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
       
       {!hasChatStarted ? (
         <div className="flex-grow flex items-center justify-center text-center text-gray-500 p-4">
-          <p>Design a README first, then you can chat with the AI here to make changes.</p>
+          <p>Design a profile first, then you can chat with the AI here to make changes.</p>
         </div>
       ) : (
         <>

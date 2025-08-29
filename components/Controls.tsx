@@ -3,6 +3,7 @@ import { SparklesIcon } from './icons/SparklesIcon';
 import { Tooltip } from './Tooltip';
 import { PlusIcon } from './icons/PlusIcon';
 import { TrashIcon } from './icons/TrashIcon';
+import { LockIcon } from './icons/LockIcon';
 
 interface GenerationHistoryItem {
     id: number;
@@ -14,7 +15,9 @@ interface ControlsProps {
   prompt: string;
   setPrompt: (prompt: string) => void;
   designStyle: string;
-  setDesignStyle: (language: string) => void;
+  setDesignStyle: (style: string) => void;
+  githubToken: string;
+  setGithubToken: (token: string) => void;
   onGenerate: () => void;
   isLoading: boolean;
   isChatModeEnabled: boolean;
@@ -28,20 +31,22 @@ interface ControlsProps {
 }
 
 const examplePrompts = [
-    "A simple, clean profile with an intro and social media links.",
-    "A retro terminal README with a 'currently hacking on' section.",
-    "A cyberpunk theme with neon text and a cool ASCII art header.",
-    "A professional banner with my name, title, and key skills listed.",
-    "A playful design using lots of emojis and a 'fun facts' section.",
+    "A senior developer profile with sections for skills, stats, and social media links.",
+    "A profile for a student, highlighting my current learning journey and projects.",
+    "A README for my organization, introducing our team and key repositories.",
+    "A fun, animated profile with lots of emojis and a 'snake' contribution graph.",
+    "A clean, minimalist profile with just an intro and my GitHub stats.",
 ];
 
-const DESIGN_STYLES = ['Minimalist', 'Retro Terminal', 'Cyberpunk', 'Sleek & Modern', 'Playful', 'Corporate'];
+const DESIGN_STYLES = ['Cyberpunk', 'Retro', 'Minimalist', 'Synthwave', 'Corporate', 'Playful'];
 
 export const Controls: React.FC<ControlsProps> = ({ 
   prompt, 
   setPrompt, 
   designStyle,
   setDesignStyle,
+  githubToken,
+  setGithubToken,
   onGenerate, 
   isLoading,
   isChatModeEnabled,
@@ -113,7 +118,7 @@ export const Controls: React.FC<ControlsProps> = ({
 
                 <div>
                 <label htmlFor="prompt" className="block text-sm font-medium text-gray-300 mb-2">
-                    Describe your ideal profile README
+                    Describe your profile
                 </label>
                 <textarea 
                     name="prompt" 
@@ -122,14 +127,14 @@ export const Controls: React.FC<ControlsProps> = ({
                     onChange={(e) => setPrompt(e.target.value)} 
                     className="w-full bg-black/50 border border-white/10 rounded-md p-3 text-gray-200 placeholder-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 resize-none"
                     rows={5} 
-                    placeholder="e.g., A sleek, modern profile for a full-stack developer, highlighting my work with React and Node.js."
+                    placeholder="e.g., I'm a full-stack developer from California. I love working with TypeScript, React, and Go. Include sections for my tech stack and GitHub stats."
                     aria-describedby="prompt-feedback"
                 />
-                {!prompt.trim() && <p id="prompt-feedback" className="text-xs text-gray-500 mt-1.5">Describe the README you want to create.</p>}
+                {!prompt.trim() && <p id="prompt-feedback" className="text-xs text-gray-500 mt-1.5">Tell the AI what to include in your README.</p>}
                 </div>
 
                 <div>
-                    <h3 className="text-sm font-medium text-gray-300 mb-2">Need inspiration? Try one of these:</h3>
+                    <h3 className="text-sm font-medium text-gray-300 mb-2">Need ideas? Try one of these:</h3>
                     <div className="flex flex-wrap gap-2">
                         {examplePrompts.map((example) => (
                             <button 
@@ -159,6 +164,24 @@ export const Controls: React.FC<ControlsProps> = ({
                                     onChange={(e) => setIsChatModeEnabled(e.target.checked)}
                                 />
                                 <div className="w-11 h-6 bg-white/10 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </div>
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <Tooltip text="Your token enables more accurate stats and is stored only in your browser.">
+                                <label htmlFor="github-token" className="flex items-center gap-2 text-sm font-medium text-gray-200 cursor-help">
+                                    <LockIcon />
+                                    GitHub Token
+                                </label>
+                            </Tooltip>
+                            <div className="relative w-1/2">
+                                <input
+                                    type="password"
+                                    id="github-token"
+                                    value={githubToken}
+                                    onChange={(e) => setGithubToken(e.target.value)}
+                                    placeholder="ghp_..."
+                                    className="w-full bg-black/50 border border-white/10 rounded-md p-1.5 text-sm text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                                />
                             </div>
                         </div>
                     </div>

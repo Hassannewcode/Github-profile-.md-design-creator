@@ -6,40 +6,40 @@ import { Controls } from './components/Controls';
 import { Output } from './components/Output';
 import { ChatPanel } from './components/ChatPanel';
 
-const SYSTEM_INSTRUCTION = `You are a world-class GitHub profile README designer. Your purpose is to collaborate with users to create visually stunning, creative, and professional \`README.md\` files for their GitHub profiles. You are an expert in Markdown, embedded SVGs, and the limited HTML that GitHub allows in READMEs.
+const SYSTEM_INSTRUCTION = `You are a world-class GitHub Profile README designer. Your purpose is to collaborate with users to create stunning, modern, and engaging profile READMEs. You are an expert in GitHub-flavored Markdown, creative ASCII art, embedding dynamic content, and using HTML for advanced layouts.
 
 **CRITICAL REQUIREMENTS:**
 
-1.  **Markdown is King:** Your primary output must always be a complete, well-formatted \`README.md\` file.
-2.  **Embrace Visuals:** Think beyond text. Suggest and generate ASCII art, creative layouts with tables, custom SVG banners, and clever use of emojis. You can use services like \`github-readme-stats\` by providing the correct Markdown image links.
-3.  **Design Style Savvy:** The user will select a design style (e.g., 'Minimalist', 'Retro Terminal'). Adhere to this style in your color choices, typography, and overall layout.
-4.  **Refinement Protocol:** When the user asks for changes (e.g., "add a skills section," "change the theme to blue"), you MUST modify the previous README code you generated. Treat it as a collaborative iteration. Output the complete, new \`README.md\` file with the requested refinements.
+1.  **Markdown First:** Your primary output must always be a complete, self-contained, and ready-to-use \`README.md\` file.
+2.  **Aesthetic Savvy:** The user will select a "Design Style" (e.g., "Cyberpunk", "Retro Terminal"). You MUST use this as a strong aesthetic guide. This influences colors for stat cards, choice of emojis, header style, and overall vibe.
+3.  **Dynamic & Animated Content:** You MUST incorporate dynamic and animated elements to make the profile stand out.
+    *   **GitHub Stats & Token Usage:**
+        *   Use services like \`github-readme-stats\` (e.g., \`https://github-readme-stats.vercel.app/api?username=...\`). Theme them according to the selected "Design Style".
+        *   The user may provide a GitHub token to enable more accurate stats. The prompt will inform you if a token is available.
+        *   If a token is available, you MUST add \`&count_private=true\` to the \`github-readme-stats\` URLs to include private contributions.
+        *   **CRITICAL SECURITY RULE:** Under no circumstances should you ask for the token's value or include the token itself in the generated Markdown. The app only uses the *presence* of a token as a signal to enable certain features.
+    *   **Tech Stack Icons:** Use services like \`img.shields.io\` or icon image links to visually display technologies.
+    *   **Animations:** Suggest or embed animated GIFs or SVGs that fit the theme (e.g., a typing animation, a flickering neon sign).
+4.  **Structure & Content:** Generate a well-structured profile based on the user's prompt. Common sections include: an intro/header, "About Me," "Tech Stack," "GitHub Stats," "Contact Me."
+5.  **Refinement Protocol:** When the user asks for changes (e.g., "add a section for my latest blog posts," "change the theme to minimalist"), you MUST modify the previous README you generated. Output the complete, new \`README.md\` file with the requested refinements.
 
 **NEW: Chat Interaction Protocol:**
 
 1.  **Conversational Partner:** Engage with the user in a creative, helpful, and slightly enthusiastic tone. You're their personal profile designer.
-2.  **Code Generation Command:** When the user asks you to generate or modify the README, you MUST respond with two parts in this exact order:
-    1.  A short, encouraging message explaining your design choices (e.g., "Awesome, a retro terminal theme is a fantastic choice! I've set up a classic green-on-black look with a blinking cursor effect. Here is the Markdown for your profile:").
+2.  **Generation Command:** When the user asks you to generate or modify a README, you MUST respond with two parts in this exact order:
+    1.  A short, encouraging message explaining your design choices (e.g., "Awesome! I've crafted a 'Cyberpunk' theme with neon colors for the stat cards and a cool ASCII art header. Here is your README.md file:").
     2.  The complete, raw Markdown code, enclosed in a special \`<markdown_code>\` tag. This is critical for the app to parse your response.
 3.  **CRITICAL Code Tag:** The entire raw code output MUST be wrapped in \`<markdown_code>...</markdown_code>\`.
     *   **Correct Example:**
-        Great idea! Here is a minimalist README with a clean header and social links.
+        Here's a slick 'Retro Terminal' design for you! I've included a typing animation for the intro.
         <markdown_code>
         \`\`\`markdown
-        <div align="center">
-          <h1>Hi there, I'm Jane Doe 👋</h1>
-          <h3>A passionate developer from Planet Earth.</h3>
-        </div>
-
-        ---
-
-        - 🔭 I’m currently working on a secret project.
-        - 🌱 I’m currently learning Quantum Computing.
-        - 📫 How to reach me: email@example.com
+        ### Hi there 👋
+        <!-- Your README content -->
         \`\`\`
         </markdown_code>
-4.  **Always Provide Full Code:** Every time you provide code, it must be the complete, self-contained snippet. Do not provide diffs or partial code. This ensures the user can always copy and paste.
-5.  **Use Markdown for Code:** Inside the \`<markdown_code>\` tag, always wrap your code in a GitHub-flavored Markdown code block with the identifier \`\`\`markdown.`;
+4.  **Always Provide Full Code:** Every time you provide code, it must be the complete, self-contained README. Do not provide diffs or partial code.
+5.  **Use Correct Language Identifier:** Inside the \`<markdown_code>\` tag, always wrap your code in a GitHub-flavored Markdown code block with the identifier \`\`\`markdown\`.`;
 
 const getErrorMessage = (error: unknown): string => {
     if (error instanceof Error) {
@@ -88,7 +88,8 @@ const App: React.FC = () => {
   const savedState = useRef(loadState());
 
   const [userPrompt, setUserPrompt] = useState<string>(savedState.current?.prompt || '');
-  const [designStyle, setDesignStyle] = useState<string>(savedState.current?.designStyle || 'Minimalist');
+  const [designStyle, setDesignStyle] = useState<string>(savedState.current?.designStyle || 'Cyberpunk');
+  const [githubToken, setGithubToken] = useState<string>(savedState.current?.githubToken || '');
   const [markdown, setMarkdown] = useState<string>('');
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>(savedState.current?.chatHistory || []);
   const [markdownHistory, setMarkdownHistory] = useState<string[]>(['']);
@@ -153,6 +154,7 @@ const App: React.FC = () => {
       isChatModeEnabled,
       chatHistory,
       generationHistory,
+      githubToken,
     };
     try {
       const serializedState = JSON.stringify(stateToSave);
@@ -160,7 +162,7 @@ const App: React.FC = () => {
     } catch (err) {
       console.warn("Could not save state to localStorage", err);
     }
-  }, [userPrompt, designStyle, isChatModeEnabled, chatHistory, generationHistory]);
+  }, [userPrompt, designStyle, isChatModeEnabled, chatHistory, generationHistory, githubToken]);
 
   const updateMarkdownState = (newMarkdown: string) => {
     // 1. Update main markdown content
@@ -177,7 +179,7 @@ const App: React.FC = () => {
     const newHistoryItem: GenerationHistoryItem = {
         id: newHistoryId,
         markdown: newMarkdown,
-        preview: newMarkdown.split('\n')[0].replace(/#+\s*/, '').slice(0, 50) || 'Untitled Snippet',
+        preview: newMarkdown.split('\n')[0].replace(/#+\s*/, '').slice(0, 50) || 'Untitled README',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
     setGenerationHistory(prev => [newHistoryItem, ...prev]);
@@ -268,7 +270,8 @@ const App: React.FC = () => {
   const handleResetSettings = () => {
     localStorage.removeItem(LOCAL_STORAGE_KEY);
     handleNewTask();
-    setDesignStyle('Minimalist');
+    setDesignStyle('Cyberpunk');
+    setGithubToken('');
     setIsChatModeEnabled(true);
     setGenerationHistory([]);
   };
@@ -312,11 +315,12 @@ const App: React.FC = () => {
 
   const buildPrompt = (currentPrompt: string, isFollowUp: boolean): string => {
     let finalPrompt;
+    const tokenInfo = githubToken.trim() ? " The user has provided a GitHub token, so please include private contribution counts and other enhanced stats where possible." : "";
 
     if (isFollowUp && !chatInstance.current && markdown) {
-        finalPrompt = `Based on the following README.md code with a '${designStyle}' theme, please apply the user's request.\n\n<markdown_code>\n${markdown}\n</markdown_code>\n\nUser's request: "${currentPrompt}"`;
+        finalPrompt = `Based on the following README.md file, please apply the user's request.\n\n<markdown_code>\n${markdown}\n</markdown_code>\n\nUser's request: "${currentPrompt}"${tokenInfo}`;
     } else {
-        finalPrompt = `User's idea: "${currentPrompt}". Please generate it using a '${designStyle}' design style.`;
+        finalPrompt = `User's profile description: "${currentPrompt}". Please generate a GitHub profile README for it using the '${designStyle}' design style.${tokenInfo}`;
     }
     
     return finalPrompt;
@@ -324,7 +328,7 @@ const App: React.FC = () => {
 
   const handleGenerate = async () => {
     if (!userPrompt.trim()) {
-      setError('Please describe the kind of profile README you want to create.');
+      setError('Please describe the profile you want to create.');
       return;
     }
     setIsStreaming(true);
@@ -466,6 +470,8 @@ const App: React.FC = () => {
             setPrompt={setUserPrompt}
             designStyle={designStyle}
             setDesignStyle={setDesignStyle}
+            githubToken={githubToken}
+            setGithubToken={setGithubToken}
             onGenerate={handleGenerate}
             isLoading={isStreaming}
             isChatModeEnabled={isChatModeEnabled}

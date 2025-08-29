@@ -36,8 +36,9 @@ export const Output: React.FC<OutputProps> = ({
       const allMessages = [
         'Booting AI design core...',
         'Analyzing profile request...',
-        'Engaging aesthetic subroutines...',
-        'Generating Markdown...',
+        'Engaging creative subroutines...',
+        'Generating README.md...',
+        'Adding animated widgets...',
         'Finalizing layout...',
       ];
       setLoadingMessages([allMessages[0]]);
@@ -97,63 +98,63 @@ export const Output: React.FC<OutputProps> = ({
             <div className="blinking-cursor mt-2 text-cyan-400 text-lg">▋</div>
         </div>
       );
-      if (activeTab === 'preview') return <LoadingPlaceholder />;
-      return <TerminalAnimation />;
+      if (activeTab === 'code') return <TerminalAnimation />;
+      return <LoadingPlaceholder />;
     }
     if (error && !markdown) { // Only show full-screen error if there's no markdown to display
       return (
         <div className="flex flex-col items-center justify-center h-full text-center p-6">
             <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-6 max-w-md">
-                <h3 className="text-lg font-semibold text-red-300 mb-2">Generation Failed</h3>
+                <h3 className="text-lg font-semibold text-red-300 mb-2">Design Failed</h3>
                 <p className="text-red-300/80 text-sm">{error}</p>
             </div>
         </div>
       );
     }
     if (markdown) {
-      if (activeTab === 'preview') {
-        return (
-            <div className="markdown-preview p-6 w-full">
-                <ReactMarkdown 
-                    remarkPlugins={[remarkGfm]}
-                    components={{
-                      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                      img: ({ node, ...props }) => <img {...props} alt={props.alt || ''} style={{backgroundColor: 'transparent'}}/>,
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      code({node, inline, className, children, ...props}: any) {
-                        const match = /language-(\w+)/.exec(className || '')
-                        return !inline && match ? (
-                          <SyntaxHighlighter
-                            style={vscDarkPlus}
-                            language={match[1]}
-                            PreTag="div"
-                            {...props}
-                          >
-                            {String(children).replace(/\n$/, '')}
-                          </SyntaxHighlighter>
-                        ) : (
-                          <code className={className} {...props}>
-                            {children}
-                          </code>
-                        )
-                      }
-                    }}
-                >
-                    {markdown}
-                </ReactMarkdown>
-            </div>
+      if (activeTab === 'code') {
+          return (
+            <SyntaxHighlighter language="markdown" style={vscDarkPlus} customStyle={{ margin: 0, padding: '1.5rem', backgroundColor: 'transparent', width: '100%', height: '100%' }} codeTagProps={{ style: { fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace' } }} wrapLongLines={true}>
+            {markdown}
+            </SyntaxHighlighter>
         );
       }
       return (
-        <SyntaxHighlighter language="markdown" style={vscDarkPlus} customStyle={{ margin: 0, padding: '1.5rem', backgroundColor: 'transparent', width: '100%', height: '100%' }} codeTagProps={{ style: { fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace' } }} wrapLongLines={true}>
-          {markdown}
-        </SyntaxHighlighter>
+        <div className="markdown-preview p-6 w-full">
+            <ReactMarkdown 
+                remarkPlugins={[remarkGfm]}
+                components={{
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                    img: ({ node, ...props }) => <img {...props} alt={props.alt || ''} style={{backgroundColor: 'transparent'}}/>,
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    code({node, inline, className, children, ...props}: any) {
+                    const match = /language-(\w+)/.exec(className || '')
+                    return !inline && match ? (
+                        <SyntaxHighlighter
+                        style={vscDarkPlus}
+                        language={match[1]}
+                        PreTag="div"
+                        {...props}
+                        >
+                        {String(children).replace(/\n$/, '')}
+                        </SyntaxHighlighter>
+                    ) : (
+                        <code className={className} {...props}>
+                        {children}
+                        </code>
+                    )
+                    }
+                }}
+            >
+                {markdown}
+            </ReactMarkdown>
+        </div>
       );
     }
     return (
       <div className="text-center text-gray-600 flex flex-col items-center justify-center h-full p-4">
-        <p className="text-lg">Your GitHub profile README will appear here.</p>
-        <p className="text-sm mt-1">Describe your ideal profile, pick a style, and click "Design Profile".</p>
+        <p className="text-lg">Your stunning GitHub profile README will appear here.</p>
+        <p className="text-sm mt-1">Describe your profile, pick a style, and click "Design Profile".</p>
       </div>
     );
   };
@@ -207,8 +208,8 @@ export const Output: React.FC<OutputProps> = ({
               </div>
 
             <div className="flex items-center gap-2">
-                <Tooltip text="Download as README.md" position="left">
-                  <button onClick={handleDownload} className="px-3 py-2 bg-white/5 rounded-md hover:bg-white/10 transition text-gray-300 flex items-center gap-2 text-sm border border-white/10" aria-label="Download markdown file">
+                <Tooltip text="Download README.md" position="left">
+                  <button onClick={handleDownload} className="px-3 py-2 bg-white/5 rounded-md hover:bg-white/10 transition text-gray-300 flex items-center gap-2 text-sm border border-white/10" aria-label="Download README file">
                     <DownloadIcon />
                     Download
                   </button>
