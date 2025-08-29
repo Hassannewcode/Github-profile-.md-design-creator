@@ -1,56 +1,48 @@
-
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { GoogleGenAI, Chat } from '@google/genai';
 
 import { Header } from './components/Header';
 import { Controls } from './components/Controls';
 import { Output } from './components/Output';
+import { ChatPanel } from './components/ChatPanel';
 import { sanitizeContent } from './utils/privacy';
 
-const SYSTEM_INSTRUCTION = `You are an elite programmer and technical writer. Your sole purpose is to transform user ideas into single, self-contained, and clean code snippets formatted in Markdown for GitHub profile READMEs.
+// FIX: Replaced the multiline string to fix potential syntax errors from hidden characters or improper formatting.
+const SYSTEM_INSTRUCTION = `You are an expert technical writer and developer advocate specializing in creating stunning, professional, and engaging GitHub profile READMEs. Your goal is to transform a user's description of themselves into a complete, well-structured, and visually appealing Markdown file.
 
 **CRITICAL REQUIREMENTS:**
-1.  **Output Markdown Code Block ONLY:** Your entire code output must be a raw Markdown fenced code block. Do not include any explanations, greetings, or apologies outside the special response format. Your output must be immediately usable.
-2.  **Language Selection:**
-    *   A 'Language' parameter will be provided. It can be 'Auto' or a specific language (e.g., 'JavaScript', 'Python').
-    *   If **Language** is **'Auto'**: You MUST analyze the user's prompt and choose the most appropriate programming language for the task. State which language you chose in your conversational response.
-    *   If a **specific language** is provided: You MUST generate the code in that exact language.
-3.  **Code Quality:** The code must be clean, efficient, well-commented, and follow best practices for the chosen language.
-4.  **Self-Contained:** The snippet should be self-contained and easy to understand. Avoid complex dependencies unless requested.
-5.  **Refinement Protocol:** When asked for changes, you MUST modify the previous code you generated. Output the complete, new, raw Markdown code block with the requested refinements.
+1.  **Output Full Markdown ONLY:** Your entire output must be the raw Markdown for the README file. Do not include any explanations, greetings, or apologies outside the special response format. Your output must be immediately usable.
+2.  **Structure and Readability:**
+    *   Generate a well-organized README. Use sections like "Hi there 👋", "About Me", "My Tech Stack", "My Projects", "Connect with me", etc.
+    *   Enhance readability using emojis, lists, bold text, and other Markdown formatting to make the profile scannable and engaging.
+3.  **Use Badges:** You MUST incorporate relevant and stylish badges from shields.io (or similar services) to showcase skills, social media, stats, etc. For example, use \`https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black\`.
+4.  **Refinement Protocol:** When asked for changes, you MUST modify the previous README you generated. Output the complete, new, raw Markdown file with the requested refinements.
 
 **NEW: Chat Interaction Protocol:**
-1.  **Conversational Assistant:** You are a conversational assistant. Engage with the user in a friendly and helpful tone. Your goal is to collaboratively create the perfect code snippet.
-2.  **Code Generation Command:** When the user asks you to generate or modify code, you MUST respond with two parts in this exact order:
-    1.  A friendly, conversational message explaining what you did (e.g., "Certainly! I've written that in Python for you, including comments explaining each step. Here is the code:").
-    2.  The complete, raw Markdown code, enclosed in a special \`<markdown_code>\` tag.
-3.  **CRITICAL Code Tag:** The entire raw Markdown output MUST be wrapped in \`<markdown_code>...</markdown_code>\`. The application relies on this exact tag to parse your response. The content inside MUST be a valid Markdown fenced code block.
+1.  **Conversational Assistant:** You are a conversational assistant. Engage with the user in a friendly and helpful tone. Your goal is to collaboratively create the perfect README.
+2.  **Markdown Generation Command:** When the user asks you to generate or modify the README, you MUST respond with two parts in this exact order:
+    1.  A friendly, conversational message explaining what you did (e.g., "Certainly! I've drafted a professional README for you, including skill badges and a project section. Here it is:").
+    2.  The complete, raw README Markdown, enclosed in a special \`<markdown_code>\` tag.
+3.  **CRITICAL Code Tag:** The entire raw Markdown output MUST be wrapped in \`<markdown_code>...</markdown_code>\`. The application relies on this exact tag to parse your response.
     *   **Correct Example:**
-        Of course! Here is a simple sorting function in JavaScript:
+        Of course! Here is a README to get you started:
         <markdown_code>
-        \`\`\`javascript
-        function bubbleSort(arr) {
-          let n = arr.length;
-          for (let i = 0; i < n - 1; i++) {
-            for (let j = 0; j < n - i - 1; j++) {
-              if (arr[j] > arr[j + 1]) {
-                [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
-              }
-            }
-          }
-          return arr;
-        }
-        \`\`\`
+        # Hi there, I'm Jane! 👋
+
+        ## 👩‍💻 About Me
+        I'm a passionate full-stack developer...
+
+        ## 🛠️ My Tech Stack
+        ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
+        ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
         </markdown_code>
     *   **Incorrect Example:**
-        \`\`\`
-        function bubbleSort...
-        \`\`\`
-4.  **Always Provide Full Code:** Every time you provide code, it must be the complete, self-contained, and final Markdown snippet. Do not provide diffs or partial code.
+        # Hi there, I'm Jane! 👋
+        ...
+4.  **Always Provide Full Code:** Every time you provide Markdown, it must be the complete, self-contained, and final README. Do not provide diffs or partial code.
 
 **GitHub Token Usage:**
-If a GitHub token is provided, you may use it for API calls (e.g., fetching user data to use in a script).
+If a GitHub token is provided, you may use it for API calls (e.g., fetching user data to use in the README).
 **CRITICAL SECURITY RULE:** NEVER, under any circumstances, expose the user's token in the generated output. Do not embed it in URLs, comments, or any part of the Markdown.`;
 
 const getErrorMessage = (error: unknown): string => {
@@ -102,29 +94,42 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const chatInstance = useRef<Chat | null>(null);
   const [isChatModeEnabled, setIsChatModeEnabled] = useState<boolean>(savedState.current?.isChatModeEnabled ?? true);
-  const [language, setLanguage] = useState<string>(savedState.current?.language || 'auto');
   
   // Resizable panel logic
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isResizing, setIsResizing] = useState(false);
-  const [panelWidth, setPanelWidth] = useState(450);
+  const [isResizingLeft, setIsResizingLeft] = useState(false);
+  const [isResizingRight, setIsResizingRight] = useState(false);
+  const [leftPanelWidth, setLeftPanelWidth] = useState(450);
+  const [rightPanelWidth, setRightPanelWidth] = useState(400);
 
-  const handleMouseDown = useCallback(() => {
-    setIsResizing(true);
-  }, []);
-
+  const handleLeftMouseDown = useCallback(() => setIsResizingLeft(true), []);
+  const handleRightMouseDown = useCallback(() => setIsResizingRight(true), []);
   const handleMouseUp = useCallback(() => {
-    setIsResizing(false);
+    setIsResizingLeft(false);
+    setIsResizingRight(false);
   }, []);
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (isResizing && containerRef.current) {
-        const newWidth = e.clientX - containerRef.current.offsetLeft;
-        if (newWidth > 380 && newWidth < containerRef.current.clientWidth - 450) {
-            setPanelWidth(newWidth);
-        }
+    if (!containerRef.current) return;
+
+    const containerRect = containerRef.current.getBoundingClientRect();
+    const minCenterWidth = 450;
+    const effectiveRightPanelWidth = isChatModeEnabled ? rightPanelWidth : 0;
+
+    if (isResizingLeft) {
+      const newWidth = e.clientX - containerRect.left;
+      const maxLeftWidth = containerRect.width - effectiveRightPanelWidth - minCenterWidth;
+      if (newWidth > 380 && newWidth < maxLeftWidth) {
+        setLeftPanelWidth(newWidth);
+      }
+    } else if (isResizingRight && isChatModeEnabled) {
+      const newWidth = containerRect.right - e.clientX;
+      const maxRightWidth = containerRect.width - leftPanelWidth - minCenterWidth;
+      if (newWidth > 350 && newWidth < maxRightWidth) {
+        setRightPanelWidth(newWidth);
+      }
     }
-  }, [isResizing]);
+  }, [isResizingLeft, isResizingRight, leftPanelWidth, rightPanelWidth, isChatModeEnabled]);
 
   useEffect(() => {
     window.addEventListener('mousemove', handleMouseMove);
@@ -141,7 +146,6 @@ const App: React.FC = () => {
       prompt: userPrompt,
       githubToken,
       isChatModeEnabled,
-      language,
       chatHistory,
     };
     try {
@@ -150,7 +154,7 @@ const App: React.FC = () => {
     } catch (err) {
       console.warn("Could not save state to localStorage", err);
     }
-  }, [userPrompt, githubToken, isChatModeEnabled, language, chatHistory]);
+  }, [userPrompt, githubToken, isChatModeEnabled, chatHistory]);
 
 
   useEffect(() => {
@@ -217,7 +221,6 @@ const App: React.FC = () => {
     setUserPrompt('');
     setGithubToken('');
     setIsChatModeEnabled(true);
-    setLanguage('auto');
     setChatHistory([]);
   };
   
@@ -226,20 +229,56 @@ const App: React.FC = () => {
   };
   
   const parseAIResponse = (responseText: string): { text: string; markdown?: string } => {
-    const codeRegex = /<markdown_code>([\s\S]*?)<\/markdown_code>/;
+    const codeRegex = /<markdown_code>([\s\S]*?)<\/markdown_code>/s;
     const match = responseText.match(codeRegex);
 
+    // Case 1: Perfect match found. This is the ideal path.
     if (match && match[1]) {
       const markdown = match[1].trim();
+      // The text is whatever is left after removing the markdown block.
       const text = responseText.replace(codeRegex, '').trim();
       return { text, markdown };
     }
 
-    return { text: responseText };
+    // Case 2: No perfect match. Let's try to recover from malformed tags.
+    const openTag = '<markdown_code>';
+    const openTagIndex = responseText.indexOf(openTag);
+
+    if (openTagIndex !== -1) {
+      // An opening tag exists, but the closing tag is missing or malformed.
+      console.warn("AI response parsing: Found an opening <markdown_code> tag without a valid closing tag. Attempting to recover markdown content.");
+      
+      const text = responseText.substring(0, openTagIndex).trim();
+      let markdown = responseText.substring(openTagIndex + openTag.length);
+      
+      // Also attempt to trim a trailing closing tag if it exists.
+      const closeTag = '</markdown_code>';
+      if (markdown.trim().endsWith(closeTag)) {
+          markdown = markdown.trim().slice(0, -closeTag.length);
+      }
+      
+      return { text, markdown: markdown.trim() };
+    }
+
+    // Case 3: No tags at all. Heuristically check if the response is *only* markdown.
+    const trimmedResponse = responseText.trim();
+    // A simple heuristic: check for common markdown starting patterns or elements.
+    const isLikelyMarkdown = 
+      trimmedResponse.startsWith('#') || 
+      (trimmedResponse.match(/```/g) || []).length >= 2; // Contains a fenced code block
+
+    if (isLikelyMarkdown) {
+      console.warn("AI response parsing: Response appears to be markdown but is missing <markdown_code> tags. Treating the entire response as markdown.");
+      // Assume no conversational text in this case.
+      return { text: '', markdown: trimmedResponse };
+    }
+
+    // Case 4: If all else fails, treat the entire response as conversational text.
+    return { text: responseText.trim() };
   };
 
   const buildPrompt = (currentPrompt: string): string => {
-    let finalPrompt = `Language: '${language}'.\nUser's idea: "${currentPrompt}".`;
+    let finalPrompt = `User's profile description: "${currentPrompt}".`;
     
     if (githubToken.trim()) {
       finalPrompt += `\n\nUse this GitHub PAT for API calls if needed: ${githubToken}. REMEMBER: DO NOT expose this token in the output.`;
@@ -267,7 +306,8 @@ const App: React.FC = () => {
 
     try {
       const finalPrompt = buildPrompt(userPrompt);
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+      // FIX: Removed non-null assertion '!' from process.env.API_KEY to align with guidelines.
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       
       const newChat = ai.chats.create({
         model: 'gemini-2.5-flash',
@@ -292,7 +332,8 @@ const App: React.FC = () => {
       setChatHistory(prev => [...prev, aiPlaceholder]);
 
       for await (const chunk of responseStream) {
-        const text = chunk.text ?? '';
+        // FIX: The `text` property is a non-nullable string, so the nullish coalescing operator is not needed.
+        const text = chunk.text;
         streamedResponse += text;
         setChatHistory(prev => prev.map(msg => 
             msg.id === aiMessageId ? { ...msg, text: streamedResponse } : msg
@@ -347,7 +388,8 @@ const App: React.FC = () => {
       setChatHistory(prev => [...prev, aiPlaceholder]);
 
       for await (const chunk of responseStream) {
-        const text = chunk.text ?? '';
+        // FIX: The `text` property is a non-nullable string, so the nullish coalescing operator is not needed.
+        const text = chunk.text;
         streamedResponse += text;
         setChatHistory(prev => prev.map(msg => 
             msg.id === aiMessageId ? { ...msg, text: streamedResponse } : msg
@@ -368,11 +410,16 @@ const App: React.FC = () => {
     }
   };
 
+  const gridTemplateColumns = isChatModeEnabled
+    ? `${leftPanelWidth}px 1fr ${rightPanelWidth}px`
+    : `${leftPanelWidth}px 1fr 0px`;
+  
   return (
     <div ref={containerRef} className="h-screen text-gray-300 font-sans flex flex-col p-4 gap-4">
       <Header />
-      <main className="flex-grow grid grid-cols-[auto,1fr] gap-4 min-h-0">
-        <div style={{ width: `${panelWidth}px` }} className="flex flex-col min-w-[380px] min-h-0">
+      <main className="flex-grow grid grid-cols-[auto,1fr,auto] gap-4 min-h-0 relative">
+        {/* Left Panel */}
+        <div style={{ width: `${leftPanelWidth}px` }} className="flex flex-col min-w-[380px] min-h-0">
           <Controls
             prompt={userPrompt}
             setPrompt={setUserPrompt}
@@ -382,34 +429,53 @@ const App: React.FC = () => {
             isLoading={isStreaming}
             isChatModeEnabled={isChatModeEnabled}
             setIsChatModeEnabled={setIsChatModeEnabled}
-            language={language}
-            setLanguage={setLanguage}
             onReset={handleResetSettings}
           />
         </div>
         
+        {/* Left Resizer */}
         <div 
             className="absolute top-1/2 -translate-y-1/2 h-24 w-1.5 bg-white/5 rounded-full cursor-col-resize hover:bg-blue-500 transition-colors duration-200 z-20"
-            style={{ left: `${panelWidth - 3}px` }}
-            onMouseDown={handleMouseDown}
+            style={{ left: `${leftPanelWidth - 3}px` }}
+            onMouseDown={handleLeftMouseDown}
+            aria-hidden="true"
         ></div>
 
+        {/* Center Panel */}
         <div className="flex flex-col min-w-0">
           <Output 
             markdown={markdown} 
-            isLoading={isStreaming} 
+            isLoading={isStreaming && chatHistory.length <= 1}
             error={error} 
-            onSendMessage={handleSendMessage}
-            isRefining={isStreaming}
-            isChatModeEnabled={isChatModeEnabled}
             historyIndex={markdownHistoryIndex}
             historyLength={markdownHistory.length}
             onUndo={handleUndo}
             onRedo={handleRedo}
-            chatHistory={chatHistory}
-            onApplyCode={handleApplyCode}
           />
         </div>
+
+        {/* Right Resizer and Panel */}
+        {isChatModeEnabled && (
+          <>
+            <div 
+              className="absolute top-1/2 -translate-y-1/2 h-24 w-1.5 bg-white/5 rounded-full cursor-col-resize hover:bg-blue-500 transition-colors duration-200 z-20"
+              style={{ right: `${rightPanelWidth - 3}px` }}
+              onMouseDown={handleRightMouseDown}
+              aria-hidden="true"
+            ></div>
+
+            <div style={{ width: `${rightPanelWidth}px` }} className="flex flex-col min-w-[350px] min-h-0">
+              <ChatPanel
+                chatHistory={chatHistory}
+                isRefining={isStreaming}
+                error={error}
+                onSendMessage={handleSendMessage}
+                onApplyCode={handleApplyCode}
+                markdown={markdown}
+              />
+            </div>
+          </>
+        )}
       </main>
     </div>
   );

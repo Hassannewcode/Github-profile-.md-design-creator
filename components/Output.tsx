@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -10,69 +10,24 @@ import { LoadingPlaceholder } from './LoadingPlaceholder';
 import { Tooltip } from './Tooltip';
 import { UndoIcon } from './icons/UndoIcon';
 import { RedoIcon } from './icons/RedoIcon';
-import { ChatPanel } from './ChatPanel';
 
-
-interface ChatMessage {
-  sender: 'user' | 'ai';
-  text: string;
-  markdown?: string;
-  id: number;
-}
 interface OutputProps {
   markdown: string;
   isLoading: boolean;
-  isRefining: boolean;
   error: string | null;
-  onSendMessage: (prompt: string) => Promise<void>;
-  isChatModeEnabled: boolean;
   historyIndex: number;
   historyLength: number;
   onUndo: () => void;
   onRedo: () => void;
-  chatHistory: ChatMessage[];
-  onApplyCode: (markdown: string) => void;
 }
 
 export const Output: React.FC<OutputProps> = ({ 
-    markdown, isLoading, isRefining, error, onSendMessage, isChatModeEnabled, 
-    historyIndex, historyLength, onUndo, onRedo, chatHistory, onApplyCode
+    markdown, isLoading, error,
+    historyIndex, historyLength, onUndo, onRedo
 }) => {
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview');
   const [loadingMessages, setLoadingMessages] = useState<string[]>([]);
-
-  const outputContainerRef = useRef<HTMLDivElement>(null);
-  const [isResizingChat, setIsResizingChat] = useState(false);
-  const [chatHeight, setChatHeight] = useState(250);
-
-  const handleChatResizeMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsResizingChat(true);
-  }, []);
-
-  const handleChatResizeMouseUp = useCallback(() => {
-    setIsResizingChat(false);
-  }, []);
-
-  const handleChatResizeMouseMove = useCallback((e: MouseEvent) => {
-    if (isResizingChat && outputContainerRef.current) {
-        const containerRect = outputContainerRef.current.getBoundingClientRect();
-        const newHeight = containerRect.bottom - e.clientY;
-        if (newHeight > 120 && newHeight < containerRect.height - 150) {
-            setChatHeight(newHeight);
-        }
-    }
-  }, [isResizingChat]);
-
-  useEffect(() => {
-    window.addEventListener('mousemove', handleChatResizeMouseMove);
-    window.addEventListener('mouseup', handleChatResizeMouseUp);
-    return () => {
-        window.removeEventListener('mousemove', handleChatResizeMouseMove);
-        window.removeEventListener('mouseup', handleChatResizeMouseUp);
-    };
-  }, [handleChatResizeMouseMove, handleChatResizeMouseUp]);
 
   useEffect(() => {
     let intervalId: ReturnType<typeof setInterval> | undefined;
@@ -81,7 +36,7 @@ export const Output: React.FC<OutputProps> = ({
         'Booting AI core...',
         'Analyzing creative request...',
         'Engaging aesthetic subroutines...',
-        'Calibrating SVG vector matrix...',
+        'Compiling code...',
         'Streaming initial response...',
       ];
       setLoadingMessages([allMessages[0]]);
@@ -200,10 +155,9 @@ export const Output: React.FC<OutputProps> = ({
 
   const canUndo = historyIndex > 0;
   const canRedo = historyIndex < historyLength - 1;
-  const showChat = isChatModeEnabled && (markdown || chatHistory.length > 0);
 
   return (
-    <div ref={outputContainerRef} className="bg-[#0A0A0A]/60 border border-white/10 rounded-lg shadow-2xl flex flex-col h-full backdrop-blur-md">
+    <div className="bg-[#0A0A0A]/60 border border-white/10 rounded-lg shadow-2xl flex flex-col h-full backdrop-blur-md">
       <style>{`
           .markdown-preview h1, .markdown-preview h2, .markdown-preview h3 { color: #E5E7EB; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.3em; margin: 1.5em 0 1em; }
           .markdown-preview h1 { font-size: 2em; } .markdown-preview h2 { font-size: 1.5em; } .markdown-preview h3 { font-size: 1.25em; }
@@ -230,7 +184,7 @@ export const Output: React.FC<OutputProps> = ({
           <TabButton isActive={activeTab === 'code'} onClick={() => setActiveTab('code')}><CodeIcon /> Code</TabButton>
         </div>
         
-        {markdown && !isLoading && (
+        {markdown && (
           <div className="flex items-center gap-3">
              <div className="flex items-center gap-1">
                 <Tooltip text="Undo (Ctrl+Z)">
@@ -252,24 +206,6 @@ export const Output: React.FC<OutputProps> = ({
       <div className="relative flex-grow min-h-0 flex items-center justify-center overflow-hidden">
         <div className="w-full h-full overflow-auto custom-scrollbar">{renderContent()}</div>
       </div>
-      
-       {showChat && (
-        <>
-        <div 
-            className="w-full h-1.5 bg-white/10 cursor-row-resize hover:bg-blue-500 transition-colors duration-200 flex-shrink-0"
-            onMouseDown={handleChatResizeMouseDown}
-          ></div>
-        <ChatPanel
-          height={chatHeight}
-          chatHistory={chatHistory}
-          isRefining={isRefining}
-          error={error}
-          onSendMessage={onSendMessage}
-          onApplyCode={onApplyCode}
-          markdown={markdown}
-        />
-        </>
-       )}
     </div>
   );
 };

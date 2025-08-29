@@ -12,25 +12,18 @@ interface ControlsProps {
   isLoading: boolean;
   isChatModeEnabled: boolean;
   setIsChatModeEnabled: (enabled: boolean) => void;
-  language: string;
-  setLanguage: (language: string) => void;
   onReset: () => void;
 }
 
 const examplePrompts = [
-    "A Python script to scrape a website for headlines",
-    "A JavaScript function to sort an array of objects by a property",
-    "A responsive CSS button with a gradient and hover effect",
-    "A SQL query to find users who signed up in the last 30 days",
-    "A simple 'Hello World' server in Go",
+    "A full-stack developer from India, skilled in the MERN stack and loves open-source.",
+    "Data Scientist passionate about Python, TensorFlow, and visualizing complex data.",
+    "Mobile developer with 5 years of experience in Swift and Kotlin.",
+    "Cloud engineer certified in AWS and Azure, interested in DevOps.",
+    "Student learning web development, focusing on HTML, CSS, and JavaScript.",
 ];
 
 const GITHUB_TOKEN_REGEX = /^(ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{36}$/;
-
-const languages = [
-    "Auto", "Python", "JavaScript", "Java", "C++", "C#", "HTML", "CSS", "SQL", 
-    "PHP", "Ruby", "Go", "Bash", "R", "TypeScript", "Kotlin", "Swift"
-];
 
 export const Controls: React.FC<ControlsProps> = ({ 
   prompt, 
@@ -41,8 +34,6 @@ export const Controls: React.FC<ControlsProps> = ({
   isLoading,
   isChatModeEnabled,
   setIsChatModeEnabled,
-  language,
-  setLanguage,
   onReset,
 }) => {
   const [isTokenValid, setIsTokenValid] = useState(true);
@@ -83,7 +74,7 @@ export const Controls: React.FC<ControlsProps> = ({
         
         <div>
           <label htmlFor="prompt" className="block text-sm font-medium text-gray-300 mb-2">
-            Your Creative Idea
+            About You & Your Projects
           </label>
           <textarea 
             name="prompt" 
@@ -92,10 +83,10 @@ export const Controls: React.FC<ControlsProps> = ({
             onChange={(e) => setPrompt(e.target.value)} 
             className="w-full bg-black/50 border border-white/10 rounded-md p-3 text-gray-200 placeholder-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 resize-none"
             rows={5} 
-            placeholder="e.g., A Python script that uses the GitHub API to fetch my latest commit..."
+            placeholder="e.g., I'm a full-stack developer from California, specializing in React, Node.js, and serverless technologies. I'm passionate about building scalable web applications..."
             aria-describedby="prompt-feedback"
           />
-          {!prompt.trim() && <p id="prompt-feedback" className="text-xs text-gray-500 mt-1.5">Describe what you want to create.</p>}
+          {!prompt.trim() && <p id="prompt-feedback" className="text-xs text-gray-500 mt-1.5">Describe yourself and what you'd like in your README.</p>}
         </div>
 
         <div>
@@ -117,24 +108,7 @@ export const Controls: React.FC<ControlsProps> = ({
             <h3 className="text-sm font-medium text-gray-300 mb-3">Core Settings</h3>
             <div className="space-y-4">
                  <div className="flex justify-between items-center">
-                    <Tooltip text="Choose 'Auto' to let the AI decide the best language, or pick one yourself.">
-                        <label htmlFor="language" className="text-sm font-medium text-gray-200 cursor-help">Language</label>
-                    </Tooltip>
-                    <div className="w-[180px]">
-                        <select 
-                            id="language" 
-                            value={language} 
-                            onChange={(e) => setLanguage(e.target.value)}
-                            className="w-full bg-black/50 border border-white/10 rounded-md p-2 text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 text-sm appearance-none"
-                        >
-                            {languages.map(lang => (
-                            <option key={lang} value={lang.toLowerCase()}>{lang}</option>
-                            ))}
-                        </select>
-                    </div>
-                </div>
-                 <div className="flex justify-between items-center">
-                    <Tooltip text="Enable conversation mode to refine your code snippet iteratively.">
+                    <Tooltip text="Enable conversation mode to refine your README iteratively.">
                         <label className="text-sm font-medium text-gray-200 cursor-help">Chat Mode</label>
                     </Tooltip>
                     <div className="relative inline-flex items-center">
