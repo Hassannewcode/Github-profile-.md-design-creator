@@ -114,12 +114,12 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                         id="chat-input"
                         value={chatInput}
                         onChange={(e) => setChatInput(e.target.value)}
-                        placeholder={isRefining ? "AI is thinking..." : "e.g., 'Add a section for my social links'"}
-                        disabled={isRefining || !markdown}
+                        placeholder={isRefining ? "AI is thinking..." : (markdown ? "e.g., 'Add a section for my social links'" : "Ask the AI to make changes...")}
+                        disabled={isRefining}
                         className="w-full bg-black/50 border border-white/10 rounded-md p-2.5 pr-12 text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition disabled:opacity-50"
                         autoComplete="off"
                     />
-                    <button type="submit" disabled={isRefining || !chatInput.trim() || !markdown} className="absolute right-1.5 top-1/5 flex items-center justify-center h-8 w-8 -translate-y-1/8 bg-blue-600 text-white p-1.5 rounded-md hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors" aria-label="Send message" style={{ top: '50%', transform: 'translateY(-50%)' }}>
+                    <button type="submit" disabled={isRefining || !chatInput.trim()} className="absolute right-1.5 top-1/5 flex items-center justify-center h-8 w-8 -translate-y-1/8 bg-blue-600 text-white p-1.5 rounded-md hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors" aria-label="Send message" style={{ top: '50%', transform: 'translateY(-50%)' }}>
                         <SendIcon />
                     </button>
                     </div>
