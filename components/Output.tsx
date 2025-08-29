@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -10,6 +10,7 @@ import { LoadingPlaceholder } from './LoadingPlaceholder';
 import { Tooltip } from './Tooltip';
 import { UndoIcon } from './icons/UndoIcon';
 import { RedoIcon } from './icons/RedoIcon';
+import { DownloadIcon } from './icons/DownloadIcon';
 
 interface OutputProps {
   markdown: string;
@@ -26,7 +27,7 @@ export const Output: React.FC<OutputProps> = ({
     historyIndex, historyLength, onUndo, onRedo
 }) => {
   const [copied, setCopied] = useState(false);
-  const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview');
+  const [activeTab, setActiveTab] = useState<'preview' | 'code'>('code');
   const [loadingMessages, setLoadingMessages] = useState<string[]>([]);
 
   useEffect(() => {
@@ -55,10 +56,6 @@ export const Output: React.FC<OutputProps> = ({
       if (!isLoading) setLoadingMessages([]);
     };
   }, [isLoading, markdown]);
-
-  useEffect(() => {
-    if (markdown) setActiveTab('preview');
-  }, [markdown]);
   
   useEffect(() => {
     if (copied) {
@@ -71,6 +68,20 @@ export const Output: React.FC<OutputProps> = ({
     if (markdown) {
       navigator.clipboard.writeText(markdown);
       setCopied(true);
+    }
+  };
+
+  const handleDownload = () => {
+    if (markdown) {
+      const blob = new Blob([markdown], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'README.md';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     }
   };
 
@@ -141,8 +152,8 @@ export const Output: React.FC<OutputProps> = ({
     }
     return (
       <div className="text-center text-gray-600 flex flex-col items-center justify-center h-full p-4">
-        <p className="text-lg">Your generated masterpiece will appear here.</p>
-        <p className="text-sm mt-1">Describe an idea and click "Generate".</p>
+        <p className="text-lg">Your <code>README.md</code> will be generated here.</p>
+        <p className="text-sm mt-1">Describe the content you want and click "Generate".</p>
       </div>
     );
   };
@@ -194,11 +205,20 @@ export const Output: React.FC<OutputProps> = ({
                     <button onClick={onRedo} disabled={!canRedo} className="p-1.5 rounded-md hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"><RedoIcon /></button>
                 </Tooltip>
               </div>
-            <Tooltip text="Copy Markdown Code" position="left">
-              <button onClick={handleCopy} className="px-3 py-2 bg-white/5 rounded-md hover:bg-white/10 transition text-gray-300 flex items-center gap-2 text-sm border border-white/10" aria-label="Copy markdown">
-                <ClipboardIcon /> {copied ? 'Copied!' : 'Copy'}
-              </button>
-            </Tooltip>
+
+            <div className="flex items-center gap-2">
+                <Tooltip text="Download as README.md" position="left">
+                  <button onClick={handleDownload} className="px-3 py-2 bg-white/5 rounded-md hover:bg-white/10 transition text-gray-300 flex items-center gap-2 text-sm border border-white/10" aria-label="Download markdown file">
+                    <DownloadIcon />
+                    Download
+                  </button>
+                </Tooltip>
+                <Tooltip text="Copy Markdown Code" position="left">
+                  <button onClick={handleCopy} className="px-3 py-2 bg-white/5 rounded-md hover:bg-white/10 transition text-gray-300 flex items-center gap-2 text-sm border border-white/10" aria-label="Copy markdown">
+                    <ClipboardIcon /> {copied ? 'Copied!' : 'Copy'}
+                  </button>
+                </Tooltip>
+              </div>
           </div>
         )}
       </div>

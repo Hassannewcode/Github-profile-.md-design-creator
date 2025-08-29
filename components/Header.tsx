@@ -7,7 +7,7 @@ export const Header: React.FC = () => {
         AI GitHub Profile README Generator
       </h1>
       <p className="text-sm text-gray-400">
-        Craft a professional and engaging GitHub profile README with the power of AI.
+        Craft a professional <code>README.md</code> for your GitHub profile with the power of AI.
       </p>
     </header>
   );

@@ -74,7 +74,7 @@ export const Controls: React.FC<ControlsProps> = ({
         
         <div>
           <label htmlFor="prompt" className="block text-sm font-medium text-gray-300 mb-2">
-            About You & Your Projects
+            Describe your README.md content
           </label>
           <textarea 
             name="prompt" 
@@ -83,10 +83,10 @@ export const Controls: React.FC<ControlsProps> = ({
             onChange={(e) => setPrompt(e.target.value)} 
             className="w-full bg-black/50 border border-white/10 rounded-md p-3 text-gray-200 placeholder-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 resize-none"
             rows={5} 
-            placeholder="e.g., I'm a full-stack developer from California, specializing in React, Node.js, and serverless technologies. I'm passionate about building scalable web applications..."
+            placeholder="e.g., I'm a full-stack developer from California, specializing in React and Node.js. I want to include my top 3 projects and links to my social media."
             aria-describedby="prompt-feedback"
           />
-          {!prompt.trim() && <p id="prompt-feedback" className="text-xs text-gray-500 mt-1.5">Describe yourself and what you'd like in your README.</p>}
+          {!prompt.trim() && <p id="prompt-feedback" className="text-xs text-gray-500 mt-1.5">Describe the content you'd like in your README.md.</p>}
         </div>
 
         <div>

@@ -8,7 +8,7 @@ import { ChatPanel } from './components/ChatPanel';
 import { sanitizeContent } from './utils/privacy';
 
 // FIX: Replaced the multiline string to fix potential syntax errors from hidden characters or improper formatting.
-const SYSTEM_INSTRUCTION = `You are an expert technical writer and developer advocate specializing in creating stunning, professional, and engaging GitHub profile READMEs. Your goal is to transform a user's description of themselves into a complete, well-structured, and visually appealing Markdown file.
+const SYSTEM_INSTRUCTION = `You are an expert technical writer and developer advocate specializing in creating stunning, professional, and engaging GitHub profile READMEs. Your goal is to transform a user's description of themselves into a complete, well-structured, and visually appealing Markdown file. The user is creating a .md file, so ensure all output is valid GitHub-flavored Markdown.
 
 **CRITICAL REQUIREMENTS:**
 1.  **Output Full Markdown ONLY:** Your entire output must be the raw Markdown for the README file. Do not include any explanations, greetings, or apologies outside the special response format. Your output must be immediately usable.
@@ -415,7 +415,7 @@ const App: React.FC = () => {
     : `${leftPanelWidth}px 1fr 0px`;
   
   return (
-    <div ref={containerRef} className="h-screen text-gray-300 font-sans flex flex-col p-4 gap-4">
+    <div ref={containerRef} className="h-screen text-gray-300 font-sans flex flex-col p-4 gap-4" style={{ gridTemplateColumns }}>
       <Header />
       <main className="flex-grow grid grid-cols-[auto,1fr,auto] gap-4 min-h-0 relative">
         {/* Left Panel */}
