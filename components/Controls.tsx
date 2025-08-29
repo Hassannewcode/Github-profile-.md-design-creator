@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { SparklesIcon } from './icons/SparklesIcon';
-import { LockIcon } from './icons/LockIcon';
 import { Tooltip } from './Tooltip';
 import { PlusIcon } from './icons/PlusIcon';
 import { TrashIcon } from './icons/TrashIcon';
@@ -14,8 +13,8 @@ interface GenerationHistoryItem {
 interface ControlsProps {
   prompt: string;
   setPrompt: (prompt: string) => void;
-  githubToken: string;
-  setGithubToken: (token: string) => void;
+  programmingLanguage: string;
+  setProgrammingLanguage: (language: string) => void;
   onGenerate: () => void;
   isLoading: boolean;
   isChatModeEnabled: boolean;
@@ -29,20 +28,20 @@ interface ControlsProps {
 }
 
 const examplePrompts = [
-    "A full-stack developer from India, skilled in the MERN stack and loves open-source.",
-    "Data Scientist passionate about Python, TensorFlow, and visualizing complex data.",
-    "Mobile developer with 5 years of experience in Swift and Kotlin.",
-    "Cloud engineer certified in AWS and Azure, interested in DevOps.",
-    "Student learning web development, focusing on HTML, CSS, and JavaScript.",
+    "A pulsating button with a neon blue glow effect.",
+    "Generative art with swirling particles that follow the mouse.",
+    "A responsive card component with a flip animation on hover.",
+    "An animated loading spinner with three orbiting dots.",
+    "A retro, CRT screen text effect.",
 ];
 
-const GITHUB_TOKEN_REGEX = /^(ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{36}$/;
+const LANGUAGES = ['HTML/CSS/JS', 'React', 'SwiftUI', 'p5.js', 'Python', 'SVG'];
 
 export const Controls: React.FC<ControlsProps> = ({ 
   prompt, 
   setPrompt, 
-  githubToken,
-  setGithubToken,
+  programmingLanguage,
+  setProgrammingLanguage,
   onGenerate, 
   isLoading,
   isChatModeEnabled,
@@ -54,23 +53,14 @@ export const Controls: React.FC<ControlsProps> = ({
   onSelectHistory,
   onClearHistory,
 }) => {
-  const [isTokenValid, setIsTokenValid] = useState(true);
   const [activeTab, setActiveTab] = useState<'controls' | 'history'>('controls');
 
-  useEffect(() => {
-    if (githubToken) {
-      setIsTokenValid(GITHUB_TOKEN_REGEX.test(githubToken));
-    } else {
-      setIsTokenValid(true);
-    }
-  }, [githubToken]);
-  
   const handleExampleClick = (example: string) => {
     setPrompt(example);
     setActiveTab('controls');
   };
 
-  const isGenerateDisabled = isLoading || !prompt.trim() || !isTokenValid;
+  const isGenerateDisabled = isLoading || !prompt.trim();
   
   const TabButton = ({ isActive, onClick, children }: { isActive: boolean; onClick: () => void; children: React.ReactNode }) => (
     <button onClick={onClick} className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${isActive ? 'bg-white/10 text-white' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}>
@@ -105,8 +95,25 @@ export const Controls: React.FC<ControlsProps> = ({
         <>
             <div className="flex-grow p-4 space-y-5 overflow-y-auto min-h-0 custom-scrollbar">
                 <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Language / Framework
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                        {LANGUAGES.map(lang => (
+                            <button 
+                                key={lang}
+                                onClick={() => setProgrammingLanguage(lang)}
+                                className={`text-center text-sm px-3 py-2 rounded-md border transition-colors ${programmingLanguage === lang ? 'bg-blue-600 border-blue-500 text-white font-semibold' : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'}`}
+                            >
+                                {lang}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div>
                 <label htmlFor="prompt" className="block text-sm font-medium text-gray-300 mb-2">
-                    Describe your README.md content
+                    Describe your design or animation
                 </label>
                 <textarea 
                     name="prompt" 
@@ -115,14 +122,14 @@ export const Controls: React.FC<ControlsProps> = ({
                     onChange={(e) => setPrompt(e.target.value)} 
                     className="w-full bg-black/50 border border-white/10 rounded-md p-3 text-gray-200 placeholder-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 resize-none"
                     rows={5} 
-                    placeholder="e.g., I'm a full-stack developer from California, specializing in React and Node.js. I want to include my top 3 projects and links to my social media."
+                    placeholder="e.g., A sleek, dark-themed login form with a subtle glowing border on focus."
                     aria-describedby="prompt-feedback"
                 />
-                {!prompt.trim() && <p id="prompt-feedback" className="text-xs text-gray-500 mt-1.5">Describe the content you'd like in your README.md.</p>}
+                {!prompt.trim() && <p id="prompt-feedback" className="text-xs text-gray-500 mt-1.5">Describe the cool thing you want to create.</p>}
                 </div>
 
                 <div>
-                    <h3 className="text-sm font-medium text-gray-300 mb-2">Or try an example:</h3>
+                    <h3 className="text-sm font-medium text-gray-300 mb-2">Need inspiration? Try one of these:</h3>
                     <div className="flex flex-wrap gap-2">
                         {examplePrompts.map((example) => (
                             <button 
@@ -137,10 +144,10 @@ export const Controls: React.FC<ControlsProps> = ({
                 </div>
 
                 <div className="pt-3 border-t border-white/10">
-                    <h3 className="text-sm font-medium text-gray-300 mb-3">Core Settings</h3>
+                    <h3 className="text-sm font-medium text-gray-300 mb-3">Settings</h3>
                     <div className="space-y-4">
                         <div className="flex justify-between items-center">
-                            <Tooltip text="Enable conversation mode to refine your README iteratively.">
+                            <Tooltip text="Enable conversation mode to refine your code iteratively.">
                                 <label className="text-sm font-medium text-gray-200 cursor-help">Chat Mode</label>
                             </Tooltip>
                             <div className="relative inline-flex items-center">
@@ -155,25 +162,6 @@ export const Controls: React.FC<ControlsProps> = ({
                             </div>
                         </div>
                     </div>
-                </div>
-                
-                <div className="pt-3 border-t border-white/10">
-                <Tooltip text="Your token is used for GitHub API calls and is never stored or exposed.">
-                    <label htmlFor="github-token" className="block text-sm font-medium text-gray-300 mb-2 cursor-help">
-                        GitHub Token <span className="text-gray-500">(Optional)</span>
-                    </label>
-                </Tooltip>
-                <div className="relative">
-                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5"><LockIcon /></div>
-                    <input 
-                    type="password" name="github-token" id="github-token" value={githubToken} onChange={(e) => setGithubToken(e.target.value)}
-                    className={`w-full bg-black/50 border rounded-md p-2.5 pl-10 text-gray-200 placeholder-gray-600 focus:ring-2 focus:border-blue-500 transition duration-200 ${!isTokenValid ? 'border-red-500/70 focus:ring-red-500' : 'border-white/10 focus:ring-blue-500'}`}
-                    placeholder="ghp_... for dynamic stats"
-                    aria-describedby="token-error"
-                    aria-invalid={!isTokenValid}
-                    />
-                </div>
-                {!isTokenValid && <p id="token-error" className="text-xs text-red-400 mt-1.5">Invalid token format. Please check and try again.</p>}
                 </div>
             </div>
                 
@@ -207,7 +195,7 @@ export const Controls: React.FC<ControlsProps> = ({
           </div>
           {generationHistory.length === 0 ? (
             <div className="flex-grow flex items-center justify-center text-center text-gray-500">
-              <p>Your generated READMEs will appear here.</p>
+              <p>Your generated code snippets will appear here.</p>
             </div>
           ) : (
             <div className="flex-grow overflow-y-auto space-y-2 custom-scrollbar -mr-2 pr-2">

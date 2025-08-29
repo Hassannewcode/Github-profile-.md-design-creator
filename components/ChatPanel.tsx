@@ -53,12 +53,18 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
   const hasChatStarted = chatHistory.length > 0 || isRefining;
 
+  const getPlaceholderText = () => {
+    if (isRefining) return "AI is thinking...";
+    if (markdown) return "e.g., 'Make the animation faster'";
+    return "Generate some code first to start chatting...";
+  };
+
   return (
     <div className="bg-[#0A0A0A]/60 border border-white/10 rounded-lg shadow-2xl h-full flex flex-col backdrop-blur-md">
       <div className="p-4 border-b border-white/10 flex justify-between items-center flex-shrink-0">
         <div>
-            <h2 className="text-md font-semibold text-gray-100">AI Assistant</h2>
-            <p className="text-sm text-gray-400">Refine your README.</p>
+            <h2 className="text-md font-semibold text-gray-100">AI Co-pilot</h2>
+            <p className="text-sm text-gray-400">Refine your code.</p>
         </div>
         <Tooltip text="Refresh Chat">
             <button
@@ -74,7 +80,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
       
       {!hasChatStarted ? (
         <div className="flex-grow flex items-center justify-center text-center text-gray-500 p-4">
-          <p>Generate a README first, then you can chat with the AI here to make changes.</p>
+          <p>Generate some code first, then you can chat with the AI here to make changes.</p>
         </div>
       ) : (
         <>
@@ -114,12 +120,12 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                         id="chat-input"
                         value={chatInput}
                         onChange={(e) => setChatInput(e.target.value)}
-                        placeholder={isRefining ? "AI is thinking..." : (markdown ? "e.g., 'Add a section for my social links'" : "Ask the AI to make changes...")}
-                        disabled={isRefining}
+                        placeholder={getPlaceholderText()}
+                        disabled={isRefining || !markdown}
                         className="w-full bg-black/50 border border-white/10 rounded-md p-2.5 pr-12 text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition disabled:opacity-50"
                         autoComplete="off"
                     />
-                    <button type="submit" disabled={isRefining || !chatInput.trim()} className="absolute right-1.5 top-1/5 flex items-center justify-center h-8 w-8 -translate-y-1/8 bg-blue-600 text-white p-1.5 rounded-md hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors" aria-label="Send message" style={{ top: '50%', transform: 'translateY(-50%)' }}>
+                    <button type="submit" disabled={isRefining || !chatInput.trim() || !markdown} className="absolute right-1.5 top-1/5 flex items-center justify-center h-8 w-8 -translate-y-1/8 bg-blue-600 text-white p-1.5 rounded-md hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors" aria-label="Send message" style={{ top: '50%', transform: 'translateY(-50%)' }}>
                         <SendIcon />
                     </button>
                     </div>

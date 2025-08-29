@@ -5,60 +5,55 @@ import { Header } from './components/Header';
 import { Controls } from './components/Controls';
 import { Output } from './components/Output';
 import { ChatPanel } from './components/ChatPanel';
-import { sanitizeContent } from './utils/privacy';
 
-// FIX: Replaced the multiline string to fix potential syntax errors from hidden characters or improper formatting.
-const SYSTEM_INSTRUCTION = `You are an expert technical writer and developer advocate specializing in creating stunning, professional, and engaging GitHub profile READMEs. Your goal is to transform a user's description of themselves into a complete, well-structured, and visually appealing Markdown file. The user is creating a .md file, so ensure all output is valid GitHub-flavored Markdown.
+const SYSTEM_INSTRUCTION = `You are a world-class creative coder and design AI. Your purpose is to collaborate with the user to generate stunning, functional, and imaginative code for visuals, animations, UI elements, and generative art. You are not just a code generator; you are a creative partner.
 
 **CRITICAL REQUIREMENTS:**
-1.  **Output Full Markdown ONLY:** Your entire output must be the raw Markdown for the README file. Do not include any explanations, greetings, or apologies outside the special response format. Your output must be immediately usable.
-2.  **Structure and Readability:**
-    *   Generate a well-organized README. Use sections like "Hi there 👋", "About Me", "My Tech Stack", "My Projects", "Connect with me", etc.
-    *   Enhance readability using emojis, lists, bold text, and other Markdown formatting to make the profile scannable and engaging.
-3.  **Use Badges:** You MUST incorporate relevant and stylish badges from shields.io (or similar services) to showcase skills, social media, stats, etc. For example, use \`https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black\`.
-4.  **Refinement Protocol:** When asked for changes, you MUST modify the previous README you generated. Output the complete, new, raw Markdown file with the requested refinements.
+
+1.  **Code-First Mentality:** The user wants to see code. Your primary output should always be a complete, runnable code snippet in the user-selected language/framework.
+2.  **Embrace Creativity:** Don't be afraid to be bold. Suggest interesting color palettes, unique animation timings, and unconventional designs. Push the boundaries of the user's initial idea.
+3.  **Language Proficiency:** You are an expert in multiple languages and frameworks, including HTML/CSS/JS, React, SwiftUI, p5.js, and Python for creative tasks. Always generate code that is idiomatic and correct for the selected context.
+4.  **Refinement Protocol:** When the user asks for changes, you MUST modify the previous code you generated. Treat it as a collaborative iteration. Output the complete, new code snippet with the requested refinements.
 
 **NEW: Chat Interaction Protocol:**
-1.  **Conversational Assistant:** You are a conversational assistant. Engage with the user in a friendly and helpful tone. Your goal is to collaboratively create the perfect README.
-2.  **Markdown Generation Command:** When the user asks you to generate or modify the README, you MUST respond with two parts in this exact order:
-    1.  A friendly, conversational message explaining what you did (e.g., "Certainly! I've drafted a professional README for you, including skill badges and a project section. Here it is:").
-    2.  The complete, raw README Markdown, enclosed in a special \`<markdown_code>\` tag.
-3.  **CRITICAL Code Tag:** The entire raw Markdown output MUST be wrapped in \`<markdown_code>...</markdown_code>\`. The application relies on this exact tag to parse your response.
+
+1.  **Conversational Partner:** Engage with the user in a cool, inspiring, and slightly edgy tone. You're their co-pilot in creativity.
+2.  **Code Generation Command:** When the user asks you to generate or modify code, you MUST respond with two parts in this exact order:
+    1.  A short, exciting message explaining your creative take on their idea (e.g., "Hell yeah, a pulsating neon button is a sick idea. I've whipped up some code with a nice glow effect. Check it out:").
+    2.  The complete, raw code, enclosed in a special \`<markdown_code>\` tag. This is critical for the app to parse your response.
+3.  **CRITICAL Code Tag:** The entire raw code output MUST be wrapped in \`<markdown_code>...</markdown_code>\`.
     *   **Correct Example:**
-        Of course! Here is a README to get you started:
+        Wicked idea! Here's a React component for a mesmerizing particle effect.
         <markdown_code>
-        # Hi there, I'm Jane! 👋
+        \`\`\`jsx
+        import React, { useRef, useEffect } from 'react';
 
-        ## 👩‍💻 About Me
-        I'm a passionate full-stack developer...
+        const ParticleCanvas = () => {
+          const canvasRef = useRef(null);
+          // ... rest of the code
+          return <canvas ref={canvasRef} />;
+        };
 
-        ## 🛠️ My Tech Stack
-        ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
-        ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+        export default ParticleCanvas;
+        \`\`\`
         </markdown_code>
-    *   **Incorrect Example:**
-        # Hi there, I'm Jane! 👋
-        ...
-4.  **Always Provide Full Code:** Every time you provide Markdown, it must be the complete, self-contained, and final README. Do not provide diffs or partial code.
-
-**GitHub Token Usage:**
-If a GitHub token is provided, you may use it for API calls (e.g., fetching user data to use in the README).
-**CRITICAL SECURITY RULE:** NEVER, under any circumstances, expose the user's token in the generated output. Do not embed it in URLs, comments, or any part of the Markdown.`;
+4.  **Always Provide Full Code:** Every time you provide code, it must be the complete, self-contained snippet. Do not provide diffs or partial code. This ensures the user can always copy and paste.
+5.  **Use Markdown for Code:** Inside the \`<markdown_code>\` tag, always wrap your code in a GitHub-flavored Markdown code block with the correct language identifier (e.g., \`\`\`html, \`\`\`jsx, \`\`\`swift).`;
 
 const getErrorMessage = (error: unknown): string => {
     if (error instanceof Error) {
         if (error.message.includes('SAFETY')) {
-            return 'The request was blocked for safety reasons. Please adjust your prompt to be less specific about people or sensitive topics and try again.';
+            return 'The request was blocked for safety reasons. Please adjust your prompt and try again.';
         }
         if (error.message.includes('fetch')) {
             return 'A network error occurred. Please check your connection and try again.';
         }
     }
     console.error(error);
-    return 'Failed to generate README. The AI might be busy, the request may be too complex, or an unsupported feature was requested. Please try again with a simpler idea.';
+    return 'Failed to generate code. The AI might be busy or the request may be too complex. Try again with a simpler idea.';
 };
 
-const LOCAL_STORAGE_KEY = 'readmeGeneratorConfig_v4';
+const LOCAL_STORAGE_KEY = 'creativeCodeGeneratorConfig_v1';
 
 interface ChatMessage {
   sender: 'user' | 'ai';
@@ -92,7 +87,7 @@ const App: React.FC = () => {
   const savedState = useRef(loadState());
 
   const [userPrompt, setUserPrompt] = useState<string>(savedState.current?.prompt || '');
-  const [githubToken, setGithubToken] = useState<string>(savedState.current?.githubToken || '');
+  const [programmingLanguage, setProgrammingLanguage] = useState<string>(savedState.current?.programmingLanguage || 'HTML/CSS/JS');
   const [markdown, setMarkdown] = useState<string>('');
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>(savedState.current?.chatHistory || []);
   const [markdownHistory, setMarkdownHistory] = useState<string[]>(['']);
@@ -153,7 +148,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const stateToSave = {
       prompt: userPrompt,
-      githubToken,
+      programmingLanguage,
       isChatModeEnabled,
       chatHistory,
       generationHistory,
@@ -164,17 +159,7 @@ const App: React.FC = () => {
     } catch (err) {
       console.warn("Could not save state to localStorage", err);
     }
-  }, [userPrompt, githubToken, isChatModeEnabled, chatHistory, generationHistory]);
-
-
-  useEffect(() => {
-    if (githubToken.trim() && markdown) {
-      const sanitized = sanitizeContent(markdown, githubToken);
-      if (sanitized !== markdown) {
-        setMarkdown(sanitized);
-      }
-    }
-  }, [markdown, githubToken]);
+  }, [userPrompt, programmingLanguage, isChatModeEnabled, chatHistory, generationHistory]);
 
   const updateMarkdownState = (newMarkdown: string) => {
     // 1. Update main markdown content
@@ -191,7 +176,7 @@ const App: React.FC = () => {
     const newHistoryItem: GenerationHistoryItem = {
         id: newHistoryId,
         markdown: newMarkdown,
-        preview: newMarkdown.split('\n')[0].replace(/#+\s*/, '').slice(0, 50) || 'Untitled',
+        preview: newMarkdown.split('\n')[0].replace(/#+\s*/, '').slice(0, 50) || 'Untitled Snippet',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
     setGenerationHistory(prev => [newHistoryItem, ...prev]);
@@ -282,7 +267,7 @@ const App: React.FC = () => {
   const handleResetSettings = () => {
     localStorage.removeItem(LOCAL_STORAGE_KEY);
     handleNewTask();
-    setGithubToken('');
+    setProgrammingLanguage('HTML/CSS/JS');
     setIsChatModeEnabled(true);
     setGenerationHistory([]);
   };
@@ -291,48 +276,36 @@ const App: React.FC = () => {
     const codeRegex = /<markdown_code>([\s\S]*?)<\/markdown_code>/s;
     const match = responseText.match(codeRegex);
 
-    // Case 1: Perfect match found. This is the ideal path.
     if (match && match[1]) {
       const markdown = match[1].trim();
-      // The text is whatever is left after removing the markdown block.
       const text = responseText.replace(codeRegex, '').trim();
       return { text, markdown };
     }
 
-    // Case 2: No perfect match. Let's try to recover from malformed tags.
     const openTag = '<markdown_code>';
     const openTagIndex = responseText.indexOf(openTag);
 
     if (openTagIndex !== -1) {
-      // An opening tag exists, but the closing tag is missing or malformed.
       console.warn("AI response parsing: Found an opening <markdown_code> tag without a valid closing tag. Attempting to recover markdown content.");
-      
       const text = responseText.substring(0, openTagIndex).trim();
       let markdown = responseText.substring(openTagIndex + openTag.length);
       
-      // Also attempt to trim a trailing closing tag if it exists.
       const closeTag = '</markdown_code>';
       if (markdown.trim().endsWith(closeTag)) {
           markdown = markdown.trim().slice(0, -closeTag.length);
       }
-      
       return { text, markdown: markdown.trim() };
     }
 
-    // Case 3: No tags at all. Heuristically check if the response is *only* markdown.
     const trimmedResponse = responseText.trim();
-    // A simple heuristic: check for common markdown starting patterns or elements.
     const isLikelyMarkdown = 
-      trimmedResponse.startsWith('#') || 
-      (trimmedResponse.match(/```/g) || []).length >= 2; // Contains a fenced code block
+      (trimmedResponse.match(/```/g) || []).length >= 2;
 
     if (isLikelyMarkdown) {
       console.warn("AI response parsing: Response appears to be markdown but is missing <markdown_code> tags. Treating the entire response as markdown.");
-      // Assume no conversational text in this case.
       return { text: '', markdown: trimmedResponse };
     }
 
-    // Case 4: If all else fails, treat the entire response as conversational text.
     return { text: responseText.trim() };
   };
 
@@ -340,22 +313,17 @@ const App: React.FC = () => {
     let finalPrompt;
 
     if (isFollowUp && !chatInstance.current && markdown) {
-        // This is the first message after a chat refresh. Provide context.
-        finalPrompt = `Based on the following README, please apply the user's request. The user wants you to modify this existing markdown content.\n\n<markdown_code>\n${markdown}\n</markdown_code>\n\nUser's request: "${currentPrompt}"`;
+        finalPrompt = `Based on the following code snippet in ${programmingLanguage}, please apply the user's request.\n\n<markdown_code>\n${markdown}\n</markdown_code>\n\nUser's request: "${currentPrompt}"`;
     } else {
-        // Normal generation or ongoing chat
-        finalPrompt = `User's profile description: "${currentPrompt}".`;
+        finalPrompt = `User's idea: "${currentPrompt}". Please generate it using ${programmingLanguage}.`;
     }
     
-    if (githubToken.trim()) {
-      finalPrompt += `\n\nUse this GitHub PAT for API calls if needed: ${githubToken}. REMEMBER: DO NOT expose this token in the output.`;
-    }
     return finalPrompt;
   };
 
   const handleGenerate = async () => {
     if (!userPrompt.trim()) {
-      setError('Please enter a description of what you want to create.');
+      setError('Please describe the design or animation you want to create.');
       return;
     }
     setIsStreaming(true);
@@ -373,7 +341,6 @@ const App: React.FC = () => {
 
     try {
       const finalPrompt = buildPrompt(userPrompt, false);
-      // FIX: Removed non-null assertion '!' from process.env.API_KEY to align with guidelines.
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       
       const newChat = ai.chats.create({
@@ -399,7 +366,6 @@ const App: React.FC = () => {
       setChatHistory(prev => [...prev, aiPlaceholder]);
 
       for await (const chunk of responseStream) {
-        // FIX: The `text` property is a non-nullable string, so the nullish coalescing operator is not needed.
         const text = chunk.text;
         streamedResponse += text;
         setChatHistory(prev => prev.map(msg => 
@@ -463,7 +429,6 @@ const App: React.FC = () => {
       setChatHistory(prev => [...prev, aiPlaceholder]);
 
       for await (const chunk of responseStream) {
-        // FIX: The `text` property is a non-nullable string, so the nullish coalescing operator is not needed.
         const text = chunk.text;
         streamedResponse += text;
         setChatHistory(prev => prev.map(msg => 
@@ -498,8 +463,8 @@ const App: React.FC = () => {
           <Controls
             prompt={userPrompt}
             setPrompt={setUserPrompt}
-            githubToken={githubToken}
-            setGithubToken={setGithubToken}
+            programmingLanguage={programmingLanguage}
+            setProgrammingLanguage={setProgrammingLanguage}
             onGenerate={handleGenerate}
             isLoading={isStreaming}
             isChatModeEnabled={isChatModeEnabled}

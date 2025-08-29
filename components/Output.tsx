@@ -77,7 +77,7 @@ export const Output: React.FC<OutputProps> = ({
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'README.md';
+      a.download = 'code-snippet.md';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -152,8 +152,8 @@ export const Output: React.FC<OutputProps> = ({
     }
     return (
       <div className="text-center text-gray-600 flex flex-col items-center justify-center h-full p-4">
-        <p className="text-lg">Your <code>README.md</code> will be generated here.</p>
-        <p className="text-sm mt-1">Describe the content you want and click "Generate".</p>
+        <p className="text-lg">Your creative code will appear here.</p>
+        <p className="text-sm mt-1">Describe an idea, pick a language, and click "Generate".</p>
       </div>
     );
   };
@@ -207,13 +207,13 @@ export const Output: React.FC<OutputProps> = ({
               </div>
 
             <div className="flex items-center gap-2">
-                <Tooltip text="Download as README.md" position="left">
+                <Tooltip text="Download as code-snippet.md" position="left">
                   <button onClick={handleDownload} className="px-3 py-2 bg-white/5 rounded-md hover:bg-white/10 transition text-gray-300 flex items-center gap-2 text-sm border border-white/10" aria-label="Download markdown file">
                     <DownloadIcon />
                     Download
                   </button>
                 </Tooltip>
-                <Tooltip text="Copy Markdown Code" position="left">
+                <Tooltip text="Copy Code" position="left">
                   <button onClick={handleCopy} className="px-3 py-2 bg-white/5 rounded-md hover:bg-white/10 transition text-gray-300 flex items-center gap-2 text-sm border border-white/10" aria-label="Copy markdown">
                     <ClipboardIcon /> {copied ? 'Copied!' : 'Copy'}
                   </button>

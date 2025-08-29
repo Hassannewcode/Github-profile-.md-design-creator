@@ -4,10 +4,10 @@ export const Header: React.FC = () => {
   return (
     <header className="flex-shrink-0 px-2">
       <h1 className="text-xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-500">
-        AI GitHub Profile README Generator
+        AI Creative Code Generator
       </h1>
       <p className="text-sm text-gray-400">
-        Craft a professional <code>README.md</code> for your GitHub profile with the power of AI.
+        Bring your creative ideas to life with AI-generated code for designs and animations.
       </p>
     </header>
   );
