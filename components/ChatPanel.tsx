@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { SendIcon } from './icons/SendIcon';
 import { CheckIcon } from './icons/CheckIcon';
 import { RefreshCwIcon } from './icons/RefreshCwIcon';
+import { Tooltip } from './Tooltip';
+import { RefreshIcon } from './icons/RefreshIcon';
 
 interface ChatMessage {
   sender: 'user' | 'ai';
@@ -17,6 +19,7 @@ interface ChatPanelProps {
   onSendMessage: (message: string) => Promise<void>;
   onApplyCode: (markdown: string) => void;
   markdown: string;
+  onRefreshChat: () => void;
 }
 
 export const ChatPanel: React.FC<ChatPanelProps> = ({
@@ -26,6 +29,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   onSendMessage,
   onApplyCode,
   markdown,
+  onRefreshChat,
 }) => {
   const [chatInput, setChatInput] = useState('');
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -51,9 +55,21 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
   return (
     <div className="bg-[#0A0A0A]/60 border border-white/10 rounded-lg shadow-2xl h-full flex flex-col backdrop-blur-md">
-      <div className="p-4 border-b border-white/10 flex-shrink-0">
-        <h2 className="text-md font-semibold text-gray-100">AI Assistant</h2>
-        <p className="text-sm text-gray-400">Refine your README.</p>
+      <div className="p-4 border-b border-white/10 flex justify-between items-center flex-shrink-0">
+        <div>
+            <h2 className="text-md font-semibold text-gray-100">AI Assistant</h2>
+            <p className="text-sm text-gray-400">Refine your README.</p>
+        </div>
+        <Tooltip text="Refresh Chat">
+            <button
+                onClick={onRefreshChat}
+                disabled={isRefining}
+                className="text-gray-400 hover:text-white p-2 rounded-md hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="Refresh chat"
+            >
+                <RefreshIcon />
+            </button>
+        </Tooltip>
       </div>
       
       {!hasChatStarted ? (

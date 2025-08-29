@@ -58,13 +58,20 @@ const getErrorMessage = (error: unknown): string => {
     return 'Failed to generate README. The AI might be busy, the request may be too complex, or an unsupported feature was requested. Please try again with a simpler idea.';
 };
 
-const LOCAL_STORAGE_KEY = 'readmeGeneratorConfig_v3';
+const LOCAL_STORAGE_KEY = 'readmeGeneratorConfig_v4';
 
 interface ChatMessage {
   sender: 'user' | 'ai';
   text: string;
   markdown?: string;
   id: number;
+}
+
+interface GenerationHistoryItem {
+    id: number;
+    markdown: string;
+    preview: string;
+    timestamp: string;
 }
 
 // Load state from localStorage on initial render
@@ -94,7 +101,9 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const chatInstance = useRef<Chat | null>(null);
   const [isChatModeEnabled, setIsChatModeEnabled] = useState<boolean>(savedState.current?.isChatModeEnabled ?? true);
-  
+  const [generationHistory, setGenerationHistory] = useState<GenerationHistoryItem[]>(savedState.current?.generationHistory || []);
+  const [activeHistoryId, setActiveHistoryId] = useState<number | null>(null);
+
   // Resizable panel logic
   const containerRef = useRef<HTMLDivElement>(null);
   const [isResizingLeft, setIsResizingLeft] = useState(false);
@@ -147,6 +156,7 @@ const App: React.FC = () => {
       githubToken,
       isChatModeEnabled,
       chatHistory,
+      generationHistory,
     };
     try {
       const serializedState = JSON.stringify(stateToSave);
@@ -154,7 +164,7 @@ const App: React.FC = () => {
     } catch (err) {
       console.warn("Could not save state to localStorage", err);
     }
-  }, [userPrompt, githubToken, isChatModeEnabled, chatHistory]);
+  }, [userPrompt, githubToken, isChatModeEnabled, chatHistory, generationHistory]);
 
 
   useEffect(() => {
@@ -166,12 +176,26 @@ const App: React.FC = () => {
     }
   }, [markdown, githubToken]);
 
-  const updateHistory = (newMarkdown: string) => {
-    const newHistory = markdownHistory.slice(0, markdownHistoryIndex + 1);
-    newHistory.push(newMarkdown);
-    setMarkdownHistory(newHistory);
-    setMarkdownHistoryIndex(newHistory.length - 1);
+  const updateMarkdownState = (newMarkdown: string) => {
+    // 1. Update main markdown content
     setMarkdown(newMarkdown);
+    
+    // 2. Update undo/redo stack
+    const newUndoHistory = markdownHistory.slice(0, markdownHistoryIndex + 1);
+    newUndoHistory.push(newMarkdown);
+    setMarkdownHistory(newUndoHistory);
+    setMarkdownHistoryIndex(newUndoHistory.length - 1);
+    
+    // 3. Create and add a new generation history item
+    const newHistoryId = Date.now();
+    const newHistoryItem: GenerationHistoryItem = {
+        id: newHistoryId,
+        markdown: newMarkdown,
+        preview: newMarkdown.split('\n')[0].replace(/#+\s*/, '').slice(0, 50) || 'Untitled',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+    setGenerationHistory(prev => [newHistoryItem, ...prev]);
+    setActiveHistoryId(newHistoryId);
   };
   
   const handleUndo = useCallback(() => {
@@ -179,6 +203,7 @@ const App: React.FC = () => {
       const newIndex = markdownHistoryIndex - 1;
       setMarkdownHistoryIndex(newIndex);
       setMarkdown(markdownHistory[newIndex]);
+      setActiveHistoryId(null); // Deselect history item when undoing
     }
   }, [markdownHistory, markdownHistoryIndex]);
 
@@ -187,6 +212,7 @@ const App: React.FC = () => {
       const newIndex = markdownHistoryIndex + 1;
       setMarkdownHistoryIndex(newIndex);
       setMarkdown(markdownHistory[newIndex]);
+      setActiveHistoryId(null); // Deselect history item when redoing
     }
   }, [markdownHistory, markdownHistoryIndex]);
 
@@ -215,17 +241,50 @@ const App: React.FC = () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [handleUndo, handleRedo]);
+  
+  const handleApplyCode = (newMarkdown: string) => {
+    updateMarkdownState(newMarkdown);
+  };
+  
+  const handleSelectHistory = (id: number) => {
+    const selectedItem = generationHistory.find(item => item.id === id);
+    if (selectedItem) {
+        setMarkdown(selectedItem.markdown);
+        // Reset undo/redo stack for the selected item
+        setMarkdownHistory(['', selectedItem.markdown]);
+        setMarkdownHistoryIndex(1);
+        setActiveHistoryId(id);
+    }
+  };
+
+  const handleClearHistory = () => {
+      setGenerationHistory([]);
+      setActiveHistoryId(null);
+  };
+  
+  const handleNewTask = () => {
+    setUserPrompt('');
+    setMarkdown('');
+    setChatHistory([]);
+    setMarkdownHistory(['']);
+    setMarkdownHistoryIndex(0);
+    chatInstance.current = null;
+    setActiveHistoryId(null);
+    setError(null);
+  };
+
+  const handleRefreshChat = () => {
+    setChatHistory([]);
+    setError(null);
+    chatInstance.current = null; // This will force re-initialization on next message
+  };
 
   const handleResetSettings = () => {
     localStorage.removeItem(LOCAL_STORAGE_KEY);
-    setUserPrompt('');
+    handleNewTask();
     setGithubToken('');
     setIsChatModeEnabled(true);
-    setChatHistory([]);
-  };
-  
-  const handleApplyCode = (newMarkdown: string) => {
-    updateHistory(newMarkdown);
+    setGenerationHistory([]);
   };
   
   const parseAIResponse = (responseText: string): { text: string; markdown?: string } => {
@@ -277,8 +336,16 @@ const App: React.FC = () => {
     return { text: responseText.trim() };
   };
 
-  const buildPrompt = (currentPrompt: string): string => {
-    let finalPrompt = `User's profile description: "${currentPrompt}".`;
+  const buildPrompt = (currentPrompt: string, isFollowUp: boolean): string => {
+    let finalPrompt;
+
+    if (isFollowUp && !chatInstance.current && markdown) {
+        // This is the first message after a chat refresh. Provide context.
+        finalPrompt = `Based on the following README, please apply the user's request. The user wants you to modify this existing markdown content.\n\n<markdown_code>\n${markdown}\n</markdown_code>\n\nUser's request: "${currentPrompt}"`;
+    } else {
+        // Normal generation or ongoing chat
+        finalPrompt = `User's profile description: "${currentPrompt}".`;
+    }
     
     if (githubToken.trim()) {
       finalPrompt += `\n\nUse this GitHub PAT for API calls if needed: ${githubToken}. REMEMBER: DO NOT expose this token in the output.`;
@@ -305,7 +372,7 @@ const App: React.FC = () => {
     setChatHistory([userMessage]);
 
     try {
-      const finalPrompt = buildPrompt(userPrompt);
+      const finalPrompt = buildPrompt(userPrompt, false);
       // FIX: Removed non-null assertion '!' from process.env.API_KEY to align with guidelines.
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       
@@ -347,7 +414,7 @@ const App: React.FC = () => {
       ));
 
       if (newMarkdown) {
-        updateHistory(newMarkdown);
+        updateMarkdownState(newMarkdown);
       } else if (!aiText) {
           setError("The AI didn't return any content. Try rephrasing your idea.");
       }
@@ -361,7 +428,7 @@ const App: React.FC = () => {
   };
   
   const handleSendMessage = async (message: string) => {
-    if (!message.trim() || !chatInstance.current) {
+    if (!message.trim()) {
       return;
     }
     setIsStreaming(true);
@@ -376,7 +443,15 @@ const App: React.FC = () => {
     setChatHistory(prev => [...prev, userMessage]);
     
     try {
-      const finalPrompt = buildPrompt(message);
+      if (!chatInstance.current) {
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        chatInstance.current = ai.chats.create({
+            model: 'gemini-2.5-flash',
+            config: { systemInstruction: SYSTEM_INSTRUCTION },
+        });
+      }
+
+      const finalPrompt = buildPrompt(message, true);
       const responseStream = await chatInstance.current.sendMessageStream({ message: finalPrompt });
       
       const aiMessageId = Date.now() + 1;
@@ -430,6 +505,11 @@ const App: React.FC = () => {
             isChatModeEnabled={isChatModeEnabled}
             setIsChatModeEnabled={setIsChatModeEnabled}
             onReset={handleResetSettings}
+            onNewTask={handleNewTask}
+            generationHistory={generationHistory}
+            activeHistoryId={activeHistoryId}
+            onSelectHistory={handleSelectHistory}
+            onClearHistory={handleClearHistory}
           />
         </div>
         
@@ -472,6 +552,7 @@ const App: React.FC = () => {
                 onSendMessage={handleSendMessage}
                 onApplyCode={handleApplyCode}
                 markdown={markdown}
+                onRefreshChat={handleRefreshChat}
               />
             </div>
           </>
