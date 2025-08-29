@@ -17,6 +17,7 @@ interface ChatPanelProps {
   onSendMessage: (message: string) => Promise<void>;
   onApplyCode: (markdown: string) => void;
   markdown: string;
+  height: number;
 }
 
 export const ChatPanel: React.FC<ChatPanelProps> = ({
@@ -26,6 +27,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   onSendMessage,
   onApplyCode,
   markdown,
+  height,
 }) => {
   const [chatInput, setChatInput] = useState('');
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -48,9 +50,12 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   };
 
   return (
-    <div className="p-3 border-t border-white/10 bg-black/30 rounded-b-lg flex-shrink-0 flex flex-col max-h-[40%]">
+    <div 
+      style={{ height: `${height}px` }}
+      className="p-3 pt-0 border-t border-white/10 bg-black/30 rounded-b-lg flex-shrink-0 flex flex-col"
+    >
       {error && <p className="text-xs text-red-400 mb-2 px-2 text-center">{error}</p>}
-      <div ref={chatContainerRef} className="flex-grow space-y-4 overflow-y-auto p-2 pr-4 custom-scrollbar">
+      <div ref={chatContainerRef} className="flex-grow space-y-4 overflow-y-auto p-2 pr-4 custom-scrollbar pt-3">
         {chatHistory.map((msg) => (
           <div key={msg.id} className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}>
             <div className={`max-w-[85%] rounded-lg px-4 py-2.5 ${msg.sender === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-700/50 text-gray-200'}`}>

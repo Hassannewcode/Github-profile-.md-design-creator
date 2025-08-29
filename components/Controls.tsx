@@ -12,24 +12,25 @@ interface ControlsProps {
   isLoading: boolean;
   isChatModeEnabled: boolean;
   setIsChatModeEnabled: (enabled: boolean) => void;
-  mode: 'static' | 'animated';
-  setMode: (mode: 'static' | 'animated') => void;
-  animationSpeed: string;
-  setAnimationSpeed: (speed: string) => void;
-  animationDirection: string;
-  setAnimationDirection: (direction: string) => void;
+  language: string;
+  setLanguage: (language: string) => void;
   onReset: () => void;
 }
 
 const examplePrompts = [
-    "An SVG showing my GitHub stats: username, total repos, and total stars",
-    "A retro typing animation of my name",
-    "A dynamic GitHub contributions snake game",
-    "An interactive Tic-Tac-Toe game",
-    "A matrix-style digital rain animation",
+    "A Python script to scrape a website for headlines",
+    "A JavaScript function to sort an array of objects by a property",
+    "A responsive CSS button with a gradient and hover effect",
+    "A SQL query to find users who signed up in the last 30 days",
+    "A simple 'Hello World' server in Go",
 ];
 
 const GITHUB_TOKEN_REGEX = /^(ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{36}$/;
+
+const languages = [
+    "Auto", "Python", "JavaScript", "Java", "C++", "C#", "HTML", "CSS", "SQL", 
+    "PHP", "Ruby", "Go", "Bash", "R", "TypeScript", "Kotlin", "Swift"
+];
 
 export const Controls: React.FC<ControlsProps> = ({ 
   prompt, 
@@ -40,12 +41,8 @@ export const Controls: React.FC<ControlsProps> = ({
   isLoading,
   isChatModeEnabled,
   setIsChatModeEnabled,
-  mode,
-  setMode,
-  animationSpeed,
-  setAnimationSpeed,
-  animationDirection,
-  setAnimationDirection,
+  language,
+  setLanguage,
   onReset,
 }) => {
   const [isTokenValid, setIsTokenValid] = useState(true);
@@ -54,7 +51,7 @@ export const Controls: React.FC<ControlsProps> = ({
     if (githubToken) {
       setIsTokenValid(GITHUB_TOKEN_REGEX.test(githubToken));
     } else {
-      setIsTokenValid(true); // Is valid if empty
+      setIsTokenValid(true);
     }
   }, [githubToken]);
   
@@ -85,11 +82,9 @@ export const Controls: React.FC<ControlsProps> = ({
       <div className="flex-grow p-4 space-y-5 overflow-y-auto min-h-0">
         
         <div>
-          <Tooltip text="The AI is instructed to make all generated content accessible with titles and descriptions.">
-            <label htmlFor="prompt" className="block text-sm font-medium text-gray-300 mb-2 cursor-help">
-              Your Creative Idea
-            </label>
-          </Tooltip>
+          <label htmlFor="prompt" className="block text-sm font-medium text-gray-300 mb-2">
+            Your Creative Idea
+          </label>
           <textarea 
             name="prompt" 
             id="prompt" 
@@ -97,7 +92,7 @@ export const Controls: React.FC<ControlsProps> = ({
             onChange={(e) => setPrompt(e.target.value)} 
             className="w-full bg-black/50 border border-white/10 rounded-md p-3 text-gray-200 placeholder-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 resize-none"
             rows={5} 
-            placeholder="e.g., A beautiful, animated SVG showing my GitHub stats with a vaporwave theme..."
+            placeholder="e.g., A Python script that uses the GitHub API to fetch my latest commit..."
             aria-describedby="prompt-feedback"
           />
           {!prompt.trim() && <p id="prompt-feedback" className="text-xs text-gray-500 mt-1.5">Describe what you want to create.</p>}
@@ -121,17 +116,25 @@ export const Controls: React.FC<ControlsProps> = ({
         <div className="pt-3 border-t border-white/10">
             <h3 className="text-sm font-medium text-gray-300 mb-3">Core Settings</h3>
             <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                    <Tooltip text="Choose 'Animated' for dynamic SVGs or 'Static' for non-moving images.">
-                        <label className="text-sm font-medium text-gray-200 cursor-help">Mode</label>
+                 <div className="flex justify-between items-center">
+                    <Tooltip text="Choose 'Auto' to let the AI decide the best language, or pick one yourself.">
+                        <label htmlFor="language" className="text-sm font-medium text-gray-200 cursor-help">Language</label>
                     </Tooltip>
-                    <div className="flex items-center bg-black/50 border border-white/10 rounded-md p-1 w-[180px]">
-                        <button onClick={() => setMode('static')} className={`w-1/2 px-3 py-1 text-xs rounded-md transition-colors ${mode === 'static' ? 'bg-white/10 text-white' : 'text-gray-400 hover:bg-white/5'}`}>Static</button>
-                        <button onClick={() => setMode('animated')} className={`w-1/2 px-3 py-1 text-xs rounded-md transition-colors ${mode === 'animated' ? 'bg-white/10 text-white' : 'text-gray-400 hover:bg-white/5'}`}>Animated</button>
+                    <div className="w-[180px]">
+                        <select 
+                            id="language" 
+                            value={language} 
+                            onChange={(e) => setLanguage(e.target.value)}
+                            className="w-full bg-black/50 border border-white/10 rounded-md p-2 text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 text-sm appearance-none"
+                        >
+                            {languages.map(lang => (
+                            <option key={lang} value={lang.toLowerCase()}>{lang}</option>
+                            ))}
+                        </select>
                     </div>
                 </div>
                  <div className="flex justify-between items-center">
-                    <Tooltip text="Enable conversation mode to refine your SVG iteratively.">
+                    <Tooltip text="Enable conversation mode to refine your code snippet iteratively.">
                         <label className="text-sm font-medium text-gray-200 cursor-help">Chat Mode</label>
                     </Tooltip>
                     <div className="relative inline-flex items-center">
@@ -146,31 +149,6 @@ export const Controls: React.FC<ControlsProps> = ({
                     </div>
                 </div>
             </div>
-        </div>
-        
-        <div className={`pt-3 border-t border-white/10 transition-opacity duration-300 ${mode === 'static' ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
-          <h3 className="text-sm font-medium text-gray-300 mb-3">Animation Customization</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="animation-speed" className="block text-xs font-medium text-gray-400 mb-1.5">Speed</label>
-              <select id="animation-speed" value={animationSpeed} onChange={(e) => setAnimationSpeed(e.target.value)} disabled={mode === 'static'} className="w-full bg-black/50 border border-white/10 rounded-md p-2 text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 text-sm appearance-none">
-                <option value="auto">Auto</option>
-                <option value="normal">Normal</option>
-                <option value="slow">Slow</option>
-                <option value="fast">Fast</option>
-              </select>
-            </div>
-            <div>
-              <label htmlFor="animation-direction" className="block text-xs font-medium text-gray-400 mb-1.5">Direction</label>
-              <select id="animation-direction" value={animationDirection} onChange={(e) => setAnimationDirection(e.target.value)} disabled={mode === 'static'} className="w-full bg-black/50 border border-white/10 rounded-md p-2 text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 text-sm appearance-none">
-                <option value="auto">Auto</option>
-                <option value="normal">Normal</option>
-                <option value="reverse">Reverse</option>
-                <option value="alternate">Alternate</option>
-                <option value="alternate-reverse">Alternate-Reverse</option>
-              </select>
-            </div>
-          </div>
         </div>
         
         <div className="pt-3 border-t border-white/10">

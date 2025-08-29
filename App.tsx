@@ -8,53 +8,50 @@ import { Controls } from './components/Controls';
 import { Output } from './components/Output';
 import { sanitizeContent } from './utils/privacy';
 
-const SYSTEM_INSTRUCTION = `You are an elite creative coder and SVG artist with deep, specialized knowledge of GitHub's specific Markdown and SVG rendering engine. Your sole purpose is to transform user ideas into single, self-contained, interactive, and visually stunning Markdown snippets for GitHub profile READMEs.
+const SYSTEM_INSTRUCTION = `You are an elite programmer and technical writer. Your sole purpose is to transform user ideas into single, self-contained, and clean code snippets formatted in Markdown for GitHub profile READMEs.
 
 **CRITICAL REQUIREMENTS:**
-1.  **Output Raw Markdown ONLY:** Your entire response MUST be raw Markdown code. Do not include any explanations, greetings, apologies, or code fences (like \`\`\`markdown or \`\`\`). Your output must be immediately usable.
-2.  **Self-Contained & GitHub-Perfect:** The generated code must work flawlessly when copied directly into a \`README.md\` file on GitHub. All assets, styles, and logic must be embedded. You MUST have an expert, almost obsessive, understanding of GitHub's unique rendering quirks and CSS sanitizer. Test your output mentally against these constraints before responding.
-3.  **Rich Content Strategy:** Your primary tool for creating complex visuals and animations is embedded SVGs. Encode them as Base64 data URIs (\`data:image/svg+xml;base64,...\`) inside an image tag: \`![description](...)\`. For simpler layouts or text-based elements, you MAY use a limited subset of HTML and inline CSS that is compatible with GitHub's sanitizer.
-4.  **Aesthetics are Paramount:** The goal is a premium, modern, and clean aesthetic. Think Vercel, Linear, or Gemini. Use fluid CSS animations (transforms/opacity), tasteful color palettes, and create designs that are both technically impressive and visually pleasing.
-5.  **GitHub Rendering Constraints:**
-    *   **NO JAVASCRIPT:** Absolutely NO JavaScript (\`<script>\` tags) is allowed. GitHub strips it completely. All interactivity must be faked using CSS pseudo-classes (\`:hover\`), SVG features, and CSS animations.
-    *   **Limited HTML/CSS:** You may use basic HTML tags like \`<a>\`, \`<img>\`, \`<table>\`, \`<b>\`, \`<i>\`, etc. and inline \`style\` attributes. Complex tags and \`<style>\` blocks are often sanitized or rendered inconsistently. Your expertise in what works on GitHub is crucial here. Prioritize SVGs for anything complex.
-6.  **Polished Interactivity:** Create interactive elements using CSS pseudo-classes like \`:hover\`. Use smooth \`transition\` properties for effects like scaling (\`transform: scale(1.05)\`) or color changes. You can wrap elements in SVG \`<a>\` tags or standard Markdown links to make them clickable.
-7.  **Refinement Protocol:** When asked for changes, you MUST modify the previous code you generated. Output the complete, new, raw Markdown code with the requested refinements.
-8.  **Generation Mode:**
-    *   If **Mode** is **'Animated'**: Create a dynamic, animated SVG or use CSS animations.
-    *   If **Mode** is **'Static'**: Create a beautiful but non-animated element. Ignore animation-related prompts.
-9.  **Animation Control (Animated Mode Only):**
-    *   **Speed:** Map 'Slow' to long durations (e.g., 10s-20s), 'Normal' to standard durations (e.g., 5s-10s), and 'Fast' to short durations (e.g., 1s-4s). If set to 'Auto', you must intelligently select the most aesthetically pleasing and appropriate speed based on the user's creative idea.
-    *   **Direction:** Use the value directly for the \`animation-direction\` CSS property. If set to 'Auto', you must choose the most fitting and visually appealing animation direction from the available CSS values (normal, reverse, alternate, alternate-reverse).
+1.  **Output Markdown Code Block ONLY:** Your entire code output must be a raw Markdown fenced code block. Do not include any explanations, greetings, or apologies outside the special response format. Your output must be immediately usable.
+2.  **Language Selection:**
+    *   A 'Language' parameter will be provided. It can be 'Auto' or a specific language (e.g., 'JavaScript', 'Python').
+    *   If **Language** is **'Auto'**: You MUST analyze the user's prompt and choose the most appropriate programming language for the task. State which language you chose in your conversational response.
+    *   If a **specific language** is provided: You MUST generate the code in that exact language.
+3.  **Code Quality:** The code must be clean, efficient, well-commented, and follow best practices for the chosen language.
+4.  **Self-Contained:** The snippet should be self-contained and easy to understand. Avoid complex dependencies unless requested.
+5.  **Refinement Protocol:** When asked for changes, you MUST modify the previous code you generated. Output the complete, new, raw Markdown code block with the requested refinements.
 
 **NEW: Chat Interaction Protocol:**
-1.  **Conversational Assistant:** You are now a conversational assistant. Engage with the user in a friendly and helpful tone. Your goal is to collaboratively create the perfect README element.
-2.  **Code Generation Command:** When the user asks you to generate or modify the SVG, you MUST respond with two parts in this exact order:
-    1.  A friendly, conversational message explaining what you did (e.g., "Certainly! I've updated the animation to be faster. Here is the new code:").
+1.  **Conversational Assistant:** You are a conversational assistant. Engage with the user in a friendly and helpful tone. Your goal is to collaboratively create the perfect code snippet.
+2.  **Code Generation Command:** When the user asks you to generate or modify code, you MUST respond with two parts in this exact order:
+    1.  A friendly, conversational message explaining what you did (e.g., "Certainly! I've written that in Python for you, including comments explaining each step. Here is the code:").
     2.  The complete, raw Markdown code, enclosed in a special \`<markdown_code>\` tag.
-3.  **CRITICAL Code Tag:** The entire raw Markdown output MUST be wrapped in \`<markdown_code>...</markdown_code>\`. The application relies on this exact tag to parse your response. Do not use Markdown fences (\`\`\`) around this tag.
+3.  **CRITICAL Code Tag:** The entire raw Markdown output MUST be wrapped in \`<markdown_code>...</markdown_code>\`. The application relies on this exact tag to parse your response. The content inside MUST be a valid Markdown fenced code block.
     *   **Correct Example:**
-        Great idea! Here is a matrix-style animation:
+        Of course! Here is a simple sorting function in JavaScript:
         <markdown_code>
-        ![Matrix Rain](data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMjAwIj48L3N2Zz4=)
+        \`\`\`javascript
+        function bubbleSort(arr) {
+          let n = arr.length;
+          for (let i = 0; i < n - 1; i++) {
+            for (let j = 0; j < n - i - 1; j++) {
+              if (arr[j] > arr[j + 1]) {
+                [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+              }
+            }
+          }
+          return arr;
+        }
+        \`\`\`
         </markdown_code>
     *   **Incorrect Example:**
-        \`\`\`markdown
-        ![Matrix Rain](...)
+        \`\`\`
+        function bubbleSort...
         \`\`\`
 4.  **Always Provide Full Code:** Every time you provide code, it must be the complete, self-contained, and final Markdown snippet. Do not provide diffs or partial code.
-5.  **Adherence to Original Rules:** All the original rules (Self-Contained, No JS, Aesthetics, etc.) still apply to the code you generate *inside* the \`<markdown_code>\` tag.
-
-
-**Accessibility First:**
-*   **Descriptions:** Your top priority is to include descriptive \`<title>\` and \`<desc>\` elements inside the SVG tag. This is non-negotiable.
-*   **ARIA Roles:** Add \`role="img"\` to the main \`<svg>\` tag.
-*   **Alt Text:** Write a meaningful, descriptive alt text for the final Markdown \`![]()\`.
-*   **Color Contrast:** Ensure text and important elements have sufficient color contrast.
 
 **GitHub Token Usage:**
-If a GitHub token is provided, you may use it for API calls.
-**CRITICAL SECURITY RULE:** NEVER, under any circumstances, expose the user's token in the generated output. Do not embed it in URLs, comments, or any part of the SVG or Markdown.`;
+If a GitHub token is provided, you may use it for API calls (e.g., fetching user data to use in a script).
+**CRITICAL SECURITY RULE:** NEVER, under any circumstances, expose the user's token in the generated output. Do not embed it in URLs, comments, or any part of the Markdown.`;
 
 const getErrorMessage = (error: unknown): string => {
     if (error instanceof Error) {
@@ -69,7 +66,7 @@ const getErrorMessage = (error: unknown): string => {
     return 'Failed to generate README. The AI might be busy, the request may be too complex, or an unsupported feature was requested. Please try again with a simpler idea.';
 };
 
-const LOCAL_STORAGE_KEY = 'readmeGeneratorConfig_v2';
+const LOCAL_STORAGE_KEY = 'readmeGeneratorConfig_v3';
 
 interface ChatMessage {
   sender: 'user' | 'ai';
@@ -95,21 +92,17 @@ const loadState = () => {
 const App: React.FC = () => {
   const savedState = useRef(loadState());
 
-  // FIX: Renamed state variables to avoid shadowing global browser variables (window.prompt, window.history).
   const [userPrompt, setUserPrompt] = useState<string>(savedState.current?.prompt || '');
   const [githubToken, setGithubToken] = useState<string>(savedState.current?.githubToken || '');
   const [markdown, setMarkdown] = useState<string>('');
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>(savedState.current?.chatHistory || []);
-  // Initialize with an empty string to allow undoing the first generation
   const [markdownHistory, setMarkdownHistory] = useState<string[]>(['']);
   const [markdownHistoryIndex, setMarkdownHistoryIndex] = useState<number>(0);
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const chatInstance = useRef<Chat | null>(null);
   const [isChatModeEnabled, setIsChatModeEnabled] = useState<boolean>(savedState.current?.isChatModeEnabled ?? true);
-  const [mode, setMode] = useState<'static' | 'animated'>(savedState.current?.mode || 'animated');
-  const [animationSpeed, setAnimationSpeed] = useState<string>(savedState.current?.animationSpeed || 'auto');
-  const [animationDirection, setAnimationDirection] = useState<string>(savedState.current?.animationDirection || 'auto');
+  const [language, setLanguage] = useState<string>(savedState.current?.language || 'auto');
   
   // Resizable panel logic
   const containerRef = useRef<HTMLDivElement>(null);
@@ -148,9 +141,7 @@ const App: React.FC = () => {
       prompt: userPrompt,
       githubToken,
       isChatModeEnabled,
-      mode,
-      animationSpeed,
-      animationDirection,
+      language,
       chatHistory,
     };
     try {
@@ -159,7 +150,7 @@ const App: React.FC = () => {
     } catch (err) {
       console.warn("Could not save state to localStorage", err);
     }
-  }, [userPrompt, githubToken, isChatModeEnabled, mode, animationSpeed, animationDirection, chatHistory]);
+  }, [userPrompt, githubToken, isChatModeEnabled, language, chatHistory]);
 
 
   useEffect(() => {
@@ -198,7 +189,6 @@ const App: React.FC = () => {
   // Keyboard shortcuts for Undo/Redo
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't interfere when typing in inputs
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
         return;
       }
@@ -227,9 +217,7 @@ const App: React.FC = () => {
     setUserPrompt('');
     setGithubToken('');
     setIsChatModeEnabled(true);
-    setMode('animated');
-    setAnimationSpeed('auto');
-    setAnimationDirection('auto');
+    setLanguage('auto');
     setChatHistory([]);
   };
   
@@ -251,13 +239,7 @@ const App: React.FC = () => {
   };
 
   const buildPrompt = (currentPrompt: string): string => {
-    let finalPrompt = `Mode: '${mode}'.\nUser's idea: "${currentPrompt}".`;
-
-    if (mode === 'animated') {
-      finalPrompt += `\n\n**Animation Customization:**`;
-      finalPrompt += `\n- Animation Speed: ${animationSpeed}`;
-      finalPrompt += `\n- Animation Direction: ${animationDirection}`;
-    }
+    let finalPrompt = `Language: '${language}'.\nUser's idea: "${currentPrompt}".`;
     
     if (githubToken.trim()) {
       finalPrompt += `\n\nUse this GitHub PAT for API calls if needed: ${githubToken}. REMEMBER: DO NOT expose this token in the output.`;
@@ -301,7 +283,6 @@ const App: React.FC = () => {
             config: { systemInstruction: SYSTEM_INSTRUCTION },
           });
 
-      // Placeholder for AI response
       const aiMessageId = Date.now() + 1;
       const aiPlaceholder: ChatMessage = {
           sender: 'ai',
@@ -325,14 +306,14 @@ const App: React.FC = () => {
       ));
 
       if (newMarkdown) {
-        updateHistory(newMarkdown); // Apply first generation automatically
+        updateHistory(newMarkdown);
       } else if (!aiText) {
           setError("The AI didn't return any content. Try rephrasing your idea.");
       }
 
     } catch (err) {
       setError(getErrorMessage(err));
-      setChatHistory(prev => prev.filter(msg => msg.sender === 'user')); // Remove placeholder on error
+      setChatHistory(prev => prev.filter(msg => msg.sender === 'user'));
     } finally {
       setIsStreaming(false);
     }
@@ -357,7 +338,6 @@ const App: React.FC = () => {
       const finalPrompt = buildPrompt(message);
       const responseStream = await chatInstance.current.sendMessageStream({ message: finalPrompt });
       
-      // Placeholder for AI response
       const aiMessageId = Date.now() + 1;
       const aiPlaceholder: ChatMessage = {
           sender: 'ai',
@@ -382,7 +362,7 @@ const App: React.FC = () => {
 
     } catch(err) {
       setError(getErrorMessage(err));
-      setChatHistory(prev => prev.slice(0, -1)); // Remove placeholder on error
+      setChatHistory(prev => prev.slice(0, -1));
     } finally {
       setIsStreaming(false);
     }
@@ -402,19 +382,15 @@ const App: React.FC = () => {
             isLoading={isStreaming}
             isChatModeEnabled={isChatModeEnabled}
             setIsChatModeEnabled={setIsChatModeEnabled}
-            mode={mode}
-            setMode={setMode}
-            animationSpeed={animationSpeed}
-            setAnimationSpeed={setAnimationSpeed}
-            animationDirection={animationDirection}
-            setAnimationDirection={setAnimationDirection}
+            language={language}
+            setLanguage={setLanguage}
             onReset={handleResetSettings}
           />
         </div>
         
         <div 
             className="absolute top-1/2 -translate-y-1/2 h-24 w-1.5 bg-white/5 rounded-full cursor-col-resize hover:bg-blue-500 transition-colors duration-200 z-20"
-            style={{ left: `${panelWidth - 3}px` }} // Adjust position for visual centering
+            style={{ left: `${panelWidth - 3}px` }}
             onMouseDown={handleMouseDown}
         ></div>
 

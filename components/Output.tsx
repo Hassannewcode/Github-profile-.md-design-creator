@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -41,6 +41,38 @@ export const Output: React.FC<OutputProps> = ({
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview');
   const [loadingMessages, setLoadingMessages] = useState<string[]>([]);
+
+  const outputContainerRef = useRef<HTMLDivElement>(null);
+  const [isResizingChat, setIsResizingChat] = useState(false);
+  const [chatHeight, setChatHeight] = useState(250);
+
+  const handleChatResizeMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizingChat(true);
+  }, []);
+
+  const handleChatResizeMouseUp = useCallback(() => {
+    setIsResizingChat(false);
+  }, []);
+
+  const handleChatResizeMouseMove = useCallback((e: MouseEvent) => {
+    if (isResizingChat && outputContainerRef.current) {
+        const containerRect = outputContainerRef.current.getBoundingClientRect();
+        const newHeight = containerRect.bottom - e.clientY;
+        if (newHeight > 120 && newHeight < containerRect.height - 150) {
+            setChatHeight(newHeight);
+        }
+    }
+  }, [isResizingChat]);
+
+  useEffect(() => {
+    window.addEventListener('mousemove', handleChatResizeMouseMove);
+    window.addEventListener('mouseup', handleChatResizeMouseUp);
+    return () => {
+        window.removeEventListener('mousemove', handleChatResizeMouseMove);
+        window.removeEventListener('mouseup', handleChatResizeMouseUp);
+    };
+  }, [handleChatResizeMouseMove, handleChatResizeMouseUp]);
 
   useEffect(() => {
     let intervalId: ReturnType<typeof setInterval> | undefined;
@@ -116,7 +148,33 @@ export const Output: React.FC<OutputProps> = ({
       if (activeTab === 'preview') {
         return (
             <div className="markdown-preview p-6 w-full">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{markdown}</ReactMarkdown>
+                <ReactMarkdown 
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                      img: ({ node, ...props }) => <img {...props} alt={props.alt || ''} style={{backgroundColor: 'transparent'}}/>,
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      code({node, inline, className, children, ...props}: any) {
+                        const match = /language-(\w+)/.exec(className || '')
+                        return !inline && match ? (
+                          <SyntaxHighlighter
+                            style={vscDarkPlus}
+                            language={match[1]}
+                            PreTag="div"
+                            {...props}
+                          >
+                            {String(children).replace(/\n$/, '')}
+                          </SyntaxHighlighter>
+                        ) : (
+                          <code className={className} {...props}>
+                            {children}
+                          </code>
+                        )
+                      }
+                    }}
+                >
+                    {markdown}
+                </ReactMarkdown>
             </div>
         );
       }
@@ -142,9 +200,10 @@ export const Output: React.FC<OutputProps> = ({
 
   const canUndo = historyIndex > 0;
   const canRedo = historyIndex < historyLength - 1;
+  const showChat = isChatModeEnabled && (markdown || chatHistory.length > 0);
 
   return (
-    <div className="bg-[#0A0A0A]/60 border border-white/10 rounded-lg shadow-2xl flex flex-col h-full backdrop-blur-md">
+    <div ref={outputContainerRef} className="bg-[#0A0A0A]/60 border border-white/10 rounded-lg shadow-2xl flex flex-col h-full backdrop-blur-md">
       <style>{`
           .markdown-preview h1, .markdown-preview h2, .markdown-preview h3 { color: #E5E7EB; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.3em; margin: 1.5em 0 1em; }
           .markdown-preview h1 { font-size: 2em; } .markdown-preview h2 { font-size: 1.5em; } .markdown-preview h3 { font-size: 1.25em; }
@@ -190,12 +249,18 @@ export const Output: React.FC<OutputProps> = ({
         )}
       </div>
       
-      <div className="relative flex-grow min-h-0 flex items-center justify-center overflow-hidden rounded-b-lg">
-        <div className="w-full h-full overflow-auto">{renderContent()}</div>
+      <div className="relative flex-grow min-h-0 flex items-center justify-center overflow-hidden">
+        <div className="w-full h-full overflow-auto custom-scrollbar">{renderContent()}</div>
       </div>
       
-       {isChatModeEnabled && (markdown || chatHistory.length > 0) && (
+       {showChat && (
+        <>
+        <div 
+            className="w-full h-1.5 bg-white/10 cursor-row-resize hover:bg-blue-500 transition-colors duration-200 flex-shrink-0"
+            onMouseDown={handleChatResizeMouseDown}
+          ></div>
         <ChatPanel
+          height={chatHeight}
           chatHistory={chatHistory}
           isRefining={isRefining}
           error={error}
@@ -203,6 +268,7 @@ export const Output: React.FC<OutputProps> = ({
           onApplyCode={onApplyCode}
           markdown={markdown}
         />
+        </>
        )}
     </div>
   );
