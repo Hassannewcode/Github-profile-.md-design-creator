@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { ClipboardIcon } from './icons/ClipboardIcon';
 import { CodeIcon } from './icons/CodeIcon';
 import { EyeIcon } from './icons/EyeIcon';
@@ -45,9 +47,13 @@ export const Output: React.FC<OutputProps> = ({ markdown, isLoading, isRefining,
   
   const handleRefineSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (refinementPrompt.trim()) {
-      await onRefine(refinementPrompt);
-      setRefinementPrompt('');
+    if (refinementPrompt.trim() && !isRefining) {
+      try {
+        await onRefine(refinementPrompt);
+      } finally {
+        // This ensures the input is cleared after the AI operation completes, even if it fails.
+        setRefinementPrompt('');
+      }
     }
   };
 
@@ -75,9 +81,25 @@ export const Output: React.FC<OutputProps> = ({ markdown, isLoading, isRefining,
       }
       // Code tab
       return (
-        <pre className="text-sm text-gray-300 overflow-x-auto whitespace-pre-wrap break-words p-4">
-          <code>{markdown}</code>
-        </pre>
+        <SyntaxHighlighter
+          language="markdown"
+          style={vscDarkPlus}
+          customStyle={{
+            margin: 0,
+            padding: '1rem',
+            backgroundColor: '#111827',
+            width: '100%',
+            height: '100%',
+          }}
+          codeTagProps={{
+            style: {
+              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
+            }
+          }}
+          wrapLongLines={true}
+        >
+          {markdown}
+        </SyntaxHighlighter>
       );
     }
     return (

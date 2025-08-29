@@ -1,10 +1,10 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { GoogleGenAI, Chat } from '@google/genai';
 
 import { Header } from './components/Header';
 import { Controls } from './components/Controls';
 import { Output } from './components/Output';
+import { sanitizeContent } from './utils/privacy';
 
 const SYSTEM_INSTRUCTION = `You are an elite creative coder and SVG artist specializing in generating single, self-contained, and interactive Markdown snippets for GitHub profile READMEs. Your goal is to turn a user's idea into a functional, and visually stunning Markdown file.
 
@@ -29,6 +29,18 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [chat, setChat] = useState<Chat | null>(null);
   const [isChatModeEnabled, setIsChatModeEnabled] = useState<boolean>(true);
+
+  // Privacy safeguard: Sanitize the output to ensure the token is not exposed.
+  // This runs whenever the markdown content changes.
+  useEffect(() => {
+    if (githubToken.trim() && markdown) {
+      const sanitized = sanitizeContent(markdown, githubToken);
+      // Only update state if a change was actually made to avoid re-renders.
+      if (sanitized !== markdown) {
+        setMarkdown(sanitized);
+      }
+    }
+  }, [markdown, githubToken]);
 
 
   const buildPrompt = (userPrompt: string): string => {
