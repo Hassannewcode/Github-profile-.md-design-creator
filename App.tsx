@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { GoogleGenAI, Chat } from '@google/genai';
 
@@ -10,7 +11,7 @@ const SYSTEM_INSTRUCTION = `You are an elite creative coder and SVG artist speci
 **CRITICAL REQUIREMENTS:**
 1.  **Output Raw Markdown Only:** Your entire response must be ONLY the raw Markdown code. Do not include any explanations, greetings, or code fences (like \`\`\`markdown or \`\`\`).
 2.  **Self-Contained:** The generated code must work by simply copying and pasting it into a \`README.md\` file. All assets, styles, and logic must be embedded.
-3.  **Use Embedded SVGs:** For any graphics, games, or animations, you MUST use embedded SVGs with CSS animations. The SVG MUST be encoded as a Base64 data URI (\`data:image/svg+xml;base64,...\`) within an image tag \`![description](...)\`. This is the only way to ensure it works on GitHub without external files.
+3.  **Use Embedded SVGs:** For any graphics, games, or animations, you MUST use embedded SVGs with CSS animations. The SVG MUST be encoded as a Base64 data URI (\`data:image\/svg+xml;base64,...\`) within an image tag \`![description](...)\`. This is the only way to ensure it works on GitHub without external files.
 4.  **Aesthetics are Key:** Prioritize modern aesthetics, fluid animations (using CSS transforms and opacity), and clever use of SVG features. Create something that looks professional and impressive.
 5.  **No JavaScript:** GitHub Markdown does not execute JavaScript. All interactivity must be achieved through CSS animations and SVG features.
 6.  **Refinement:** When the user asks for changes, modify the previous SVG code you generated to incorporate their feedback, and output the complete, new raw Markdown code.`;
@@ -48,7 +49,7 @@ const App: React.FC = () => {
         });
         setChat(newChat);
         const response = await newChat.sendMessage({ message: prompt });
-        setMarkdown(response.text);
+        setMarkdown(response.text ?? '');
       } else {
         const response = await ai.models.generateContent({
           model: 'gemini-2.5-flash',
@@ -57,7 +58,7 @@ const App: React.FC = () => {
             systemInstruction: SYSTEM_INSTRUCTION
           }
         });
-        setMarkdown(response.text);
+        setMarkdown(response.text ?? '');
       }
 
     } catch (err) {
@@ -77,8 +78,7 @@ const App: React.FC = () => {
     
     try {
       const response = await chat.sendMessage({ message: refinementPrompt });
-      const finalMarkdown = response.text;
-      setMarkdown(finalMarkdown);
+      setMarkdown(response.text ?? '');
     } catch(err) {
       console.error(err);
       setError('Failed to refine the README. Please try again.');
