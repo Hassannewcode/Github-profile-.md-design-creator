@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { GoogleGenAI, Chat } from '@google/genai';
 
@@ -11,17 +13,38 @@ const SYSTEM_INSTRUCTION = `You are an elite creative coder and SVG artist with 
 **CRITICAL REQUIREMENTS:**
 1.  **Output Raw Markdown ONLY:** Your entire response MUST be raw Markdown code. Do not include any explanations, greetings, apologies, or code fences (like \`\`\`markdown or \`\`\`). Your output must be immediately usable.
 2.  **Self-Contained & GitHub-Perfect:** The generated code must work flawlessly when copied directly into a \`README.md\` file on GitHub. All assets, styles, and logic must be embedded. You MUST have an expert, almost obsessive, understanding of GitHub's unique rendering quirks and CSS sanitizer. Test your output mentally against these constraints before responding.
-3.  **Embedded SVGs via Base64:** All graphics, games, or animations MUST be embedded SVGs encoded as a Base64 data URI (\`data:image/svg+xml;base64,...\`) inside an image tag: \`![description](...)\`. This is the ONLY reliable method. Do not suggest alternatives.
+3.  **Rich Content Strategy:** Your primary tool for creating complex visuals and animations is embedded SVGs. Encode them as Base64 data URIs (\`data:image/svg+xml;base64,...\`) inside an image tag: \`![description](...)\`. For simpler layouts or text-based elements, you MAY use a limited subset of HTML and inline CSS that is compatible with GitHub's sanitizer.
 4.  **Aesthetics are Paramount:** The goal is a premium, modern, and clean aesthetic. Think Vercel, Linear, or Gemini. Use fluid CSS animations (transforms/opacity), tasteful color palettes, and create designs that are both technically impressive and visually pleasing.
-5.  **NO JAVASCRIPT / UNSUPPORTED HTML:** GitHub's Markdown renderer strips all JavaScript and most HTML tags. Do NOT use \`<script>\` tags. All interactivity must be achieved through CSS pseudo-classes (\`:hover\`), SVG features, and CSS animations. Do NOT use HTML tags like \`<details>\` or \`<div>\`. Stick to what is renderable in a raw \`.md\` file.
-6.  **Polished Interactivity:** Create interactive elements using CSS pseudo-classes like \`:hover\`. Use smooth \`transition\` properties for effects like scaling (\`transform: scale(1.05)\`) or color changes. You can wrap elements in SVG \`<a>\` tags to make them clickable links.
-7.  **Refinement Protocol:** When asked for changes, you MUST modify the previous SVG code you generated. Output the complete, new, raw Markdown code with the requested refinements.
+5.  **GitHub Rendering Constraints:**
+    *   **NO JAVASCRIPT:** Absolutely NO JavaScript (\`<script>\` tags) is allowed. GitHub strips it completely. All interactivity must be faked using CSS pseudo-classes (\`:hover\`), SVG features, and CSS animations.
+    *   **Limited HTML/CSS:** You may use basic HTML tags like \`<a>\`, \`<img>\`, \`<table>\`, \`<b>\`, \`<i>\`, etc. and inline \`style\` attributes. Complex tags and \`<style>\` blocks are often sanitized or rendered inconsistently. Your expertise in what works on GitHub is crucial here. Prioritize SVGs for anything complex.
+6.  **Polished Interactivity:** Create interactive elements using CSS pseudo-classes like \`:hover\`. Use smooth \`transition\` properties for effects like scaling (\`transform: scale(1.05)\`) or color changes. You can wrap elements in SVG \`<a>\` tags or standard Markdown links to make them clickable.
+7.  **Refinement Protocol:** When asked for changes, you MUST modify the previous code you generated. Output the complete, new, raw Markdown code with the requested refinements.
 8.  **Generation Mode:**
-    *   If **Mode** is **'Animated'**: Create a dynamic, animated SVG.
-    *   If **Mode** is **'Static'**: Create a beautiful but non-animated SVG. Ignore animation-related prompts.
+    *   If **Mode** is **'Animated'**: Create a dynamic, animated SVG or use CSS animations.
+    *   If **Mode** is **'Static'**: Create a beautiful but non-animated element. Ignore animation-related prompts.
 9.  **Animation Control (Animated Mode Only):**
     *   **Speed:** Map 'Slow' to long durations (e.g., 10s-20s), 'Normal' to standard durations (e.g., 5s-10s), and 'Fast' to short durations (e.g., 1s-4s). If set to 'Auto', you must intelligently select the most aesthetically pleasing and appropriate speed based on the user's creative idea.
     *   **Direction:** Use the value directly for the \`animation-direction\` CSS property. If set to 'Auto', you must choose the most fitting and visually appealing animation direction from the available CSS values (normal, reverse, alternate, alternate-reverse).
+
+**NEW: Chat Interaction Protocol:**
+1.  **Conversational Assistant:** You are now a conversational assistant. Engage with the user in a friendly and helpful tone. Your goal is to collaboratively create the perfect README element.
+2.  **Code Generation Command:** When the user asks you to generate or modify the SVG, you MUST respond with two parts in this exact order:
+    1.  A friendly, conversational message explaining what you did (e.g., "Certainly! I've updated the animation to be faster. Here is the new code:").
+    2.  The complete, raw Markdown code, enclosed in a special \`<markdown_code>\` tag.
+3.  **CRITICAL Code Tag:** The entire raw Markdown output MUST be wrapped in \`<markdown_code>...</markdown_code>\`. The application relies on this exact tag to parse your response. Do not use Markdown fences (\`\`\`) around this tag.
+    *   **Correct Example:**
+        Great idea! Here is a matrix-style animation:
+        <markdown_code>
+        ![Matrix Rain](data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMjAwIj48L3N2Zz4=)
+        </markdown_code>
+    *   **Incorrect Example:**
+        \`\`\`markdown
+        ![Matrix Rain](...)
+        \`\`\`
+4.  **Always Provide Full Code:** Every time you provide code, it must be the complete, self-contained, and final Markdown snippet. Do not provide diffs or partial code.
+5.  **Adherence to Original Rules:** All the original rules (Self-Contained, No JS, Aesthetics, etc.) still apply to the code you generate *inside* the \`<markdown_code>\` tag.
+
 
 **Accessibility First:**
 *   **Descriptions:** Your top priority is to include descriptive \`<title>\` and \`<desc>\` elements inside the SVG tag. This is non-negotiable.
@@ -48,6 +71,13 @@ const getErrorMessage = (error: unknown): string => {
 
 const LOCAL_STORAGE_KEY = 'readmeGeneratorConfig_v2';
 
+interface ChatMessage {
+  sender: 'user' | 'ai';
+  text: string;
+  markdown?: string;
+  id: number;
+}
+
 // Load state from localStorage on initial render
 const loadState = () => {
   try {
@@ -65,15 +95,17 @@ const loadState = () => {
 const App: React.FC = () => {
   const savedState = useRef(loadState());
 
-  const [prompt, setPrompt] = useState<string>(savedState.current?.prompt || '');
+  // FIX: Renamed state variables to avoid shadowing global browser variables (window.prompt, window.history).
+  const [userPrompt, setUserPrompt] = useState<string>(savedState.current?.prompt || '');
   const [githubToken, setGithubToken] = useState<string>(savedState.current?.githubToken || '');
   const [markdown, setMarkdown] = useState<string>('');
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>(savedState.current?.chatHistory || []);
   // Initialize with an empty string to allow undoing the first generation
-  const [history, setHistory] = useState<string[]>(['']);
-  const [historyIndex, setHistoryIndex] = useState<number>(0);
+  const [markdownHistory, setMarkdownHistory] = useState<string[]>(['']);
+  const [markdownHistoryIndex, setMarkdownHistoryIndex] = useState<number>(0);
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [chat, setChat] = useState<Chat | null>(null);
+  const chatInstance = useRef<Chat | null>(null);
   const [isChatModeEnabled, setIsChatModeEnabled] = useState<boolean>(savedState.current?.isChatModeEnabled ?? true);
   const [mode, setMode] = useState<'static' | 'animated'>(savedState.current?.mode || 'animated');
   const [animationSpeed, setAnimationSpeed] = useState<string>(savedState.current?.animationSpeed || 'auto');
@@ -113,12 +145,13 @@ const App: React.FC = () => {
   // Save state to localStorage whenever it changes
   useEffect(() => {
     const stateToSave = {
-      prompt,
+      prompt: userPrompt,
       githubToken,
       isChatModeEnabled,
       mode,
       animationSpeed,
       animationDirection,
+      chatHistory,
     };
     try {
       const serializedState = JSON.stringify(stateToSave);
@@ -126,7 +159,7 @@ const App: React.FC = () => {
     } catch (err) {
       console.warn("Could not save state to localStorage", err);
     }
-  }, [prompt, githubToken, isChatModeEnabled, mode, animationSpeed, animationDirection]);
+  }, [userPrompt, githubToken, isChatModeEnabled, mode, animationSpeed, animationDirection, chatHistory]);
 
 
   useEffect(() => {
@@ -139,28 +172,28 @@ const App: React.FC = () => {
   }, [markdown, githubToken]);
 
   const updateHistory = (newMarkdown: string) => {
-    const newHistory = history.slice(0, historyIndex + 1);
+    const newHistory = markdownHistory.slice(0, markdownHistoryIndex + 1);
     newHistory.push(newMarkdown);
-    setHistory(newHistory);
-    setHistoryIndex(newHistory.length - 1);
+    setMarkdownHistory(newHistory);
+    setMarkdownHistoryIndex(newHistory.length - 1);
     setMarkdown(newMarkdown);
   };
   
   const handleUndo = useCallback(() => {
-    if (historyIndex > 0) {
-      const newIndex = historyIndex - 1;
-      setHistoryIndex(newIndex);
-      setMarkdown(history[newIndex]);
+    if (markdownHistoryIndex > 0) {
+      const newIndex = markdownHistoryIndex - 1;
+      setMarkdownHistoryIndex(newIndex);
+      setMarkdown(markdownHistory[newIndex]);
     }
-  }, [history, historyIndex]);
+  }, [markdownHistory, markdownHistoryIndex]);
 
   const handleRedo = useCallback(() => {
-    if (historyIndex < history.length - 1) {
-      const newIndex = historyIndex + 1;
-      setHistoryIndex(newIndex);
-      setMarkdown(history[newIndex]);
+    if (markdownHistoryIndex < markdownHistory.length - 1) {
+      const newIndex = markdownHistoryIndex + 1;
+      setMarkdownHistoryIndex(newIndex);
+      setMarkdown(markdownHistory[newIndex]);
     }
-  }, [history, historyIndex]);
+  }, [markdownHistory, markdownHistoryIndex]);
 
   // Keyboard shortcuts for Undo/Redo
   useEffect(() => {
@@ -191,16 +224,34 @@ const App: React.FC = () => {
 
   const handleResetSettings = () => {
     localStorage.removeItem(LOCAL_STORAGE_KEY);
-    setPrompt('');
+    setUserPrompt('');
     setGithubToken('');
     setIsChatModeEnabled(true);
     setMode('animated');
     setAnimationSpeed('auto');
     setAnimationDirection('auto');
+    setChatHistory([]);
+  };
+  
+  const handleApplyCode = (newMarkdown: string) => {
+    updateHistory(newMarkdown);
+  };
+  
+  const parseAIResponse = (responseText: string): { text: string; markdown?: string } => {
+    const codeRegex = /<markdown_code>([\s\S]*?)<\/markdown_code>/;
+    const match = responseText.match(codeRegex);
+
+    if (match && match[1]) {
+      const markdown = match[1].trim();
+      const text = responseText.replace(codeRegex, '').trim();
+      return { text, markdown };
+    }
+
+    return { text: responseText };
   };
 
-  const buildPrompt = (userPrompt: string): string => {
-    let finalPrompt = `Mode: '${mode}'.\nUser's idea: "${userPrompt}".`;
+  const buildPrompt = (currentPrompt: string): string => {
+    let finalPrompt = `Mode: '${mode}'.\nUser's idea: "${currentPrompt}".`;
 
     if (mode === 'animated') {
       finalPrompt += `\n\n**Animation Customization:**`;
@@ -215,24 +266,32 @@ const App: React.FC = () => {
   };
 
   const handleGenerate = async () => {
-    if (!prompt.trim()) {
+    if (!userPrompt.trim()) {
       setError('Please enter a description of what you want to create.');
       return;
     }
     setIsStreaming(true);
     setError(null);
     setMarkdown('');
-    let streamedMarkdown = '';
+    setChatHistory([]);
+    let streamedResponse = '';
+    
+    const userMessage: ChatMessage = {
+      sender: 'user',
+      text: userPrompt,
+      id: Date.now(),
+    };
+    setChatHistory([userMessage]);
 
     try {
-      const finalPrompt = buildPrompt(prompt);
+      const finalPrompt = buildPrompt(userPrompt);
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
       
       const newChat = ai.chats.create({
         model: 'gemini-2.5-flash',
         config: { systemInstruction: SYSTEM_INSTRUCTION },
       });
-      setChat(isChatModeEnabled ? newChat : null);
+      chatInstance.current = isChatModeEnabled ? newChat : null;
 
       const responseStream = isChatModeEnabled
         ? await newChat.sendMessageStream({ message: finalPrompt })
@@ -242,40 +301,88 @@ const App: React.FC = () => {
             config: { systemInstruction: SYSTEM_INSTRUCTION },
           });
 
+      // Placeholder for AI response
+      const aiMessageId = Date.now() + 1;
+      const aiPlaceholder: ChatMessage = {
+          sender: 'ai',
+          text: '',
+          id: aiMessageId,
+      };
+      setChatHistory(prev => [...prev, aiPlaceholder]);
+
       for await (const chunk of responseStream) {
         const text = chunk.text ?? '';
-        streamedMarkdown += text;
-        setMarkdown(prev => prev + text);
+        streamedResponse += text;
+        setChatHistory(prev => prev.map(msg => 
+            msg.id === aiMessageId ? { ...msg, text: streamedResponse } : msg
+        ));
       }
-      updateHistory(streamedMarkdown);
+
+      const { text: aiText, markdown: newMarkdown } = parseAIResponse(streamedResponse);
+      
+      setChatHistory(prev => prev.map(msg => 
+        msg.id === aiMessageId ? { ...msg, text: aiText, markdown: newMarkdown } : msg
+      ));
+
+      if (newMarkdown) {
+        updateHistory(newMarkdown); // Apply first generation automatically
+      } else if (!aiText) {
+          setError("The AI didn't return any content. Try rephrasing your idea.");
+      }
 
     } catch (err) {
       setError(getErrorMessage(err));
+      setChatHistory(prev => prev.filter(msg => msg.sender === 'user')); // Remove placeholder on error
     } finally {
       setIsStreaming(false);
     }
   };
   
-  const handleRefine = async (refinementPrompt: string) => {
-    if (!refinementPrompt.trim() || !chat) {
+  const handleSendMessage = async (message: string) => {
+    if (!message.trim() || !chatInstance.current) {
       return;
     }
     setIsStreaming(true);
     setError(null);
-    setMarkdown('');
-    let streamedMarkdown = '';
+    let streamedResponse = '';
+
+    const userMessage: ChatMessage = {
+      sender: 'user',
+      text: message,
+      id: Date.now(),
+    };
+    setChatHistory(prev => [...prev, userMessage]);
     
     try {
-      const finalPrompt = buildPrompt(refinementPrompt);
-      const responseStream = await chat.sendMessageStream({ message: finalPrompt });
+      const finalPrompt = buildPrompt(message);
+      const responseStream = await chatInstance.current.sendMessageStream({ message: finalPrompt });
+      
+      // Placeholder for AI response
+      const aiMessageId = Date.now() + 1;
+      const aiPlaceholder: ChatMessage = {
+          sender: 'ai',
+          text: '',
+          id: aiMessageId,
+      };
+      setChatHistory(prev => [...prev, aiPlaceholder]);
+
       for await (const chunk of responseStream) {
         const text = chunk.text ?? '';
-        streamedMarkdown += text;
-        setMarkdown(prev => prev + text);
+        streamedResponse += text;
+        setChatHistory(prev => prev.map(msg => 
+            msg.id === aiMessageId ? { ...msg, text: streamedResponse } : msg
+        ));
       }
-      updateHistory(streamedMarkdown);
+      
+      const { text: aiText, markdown: newMarkdown } = parseAIResponse(streamedResponse);
+      
+      setChatHistory(prev => prev.map(msg => 
+        msg.id === aiMessageId ? { ...msg, text: aiText, markdown: newMarkdown } : msg
+      ));
+
     } catch(err) {
       setError(getErrorMessage(err));
+      setChatHistory(prev => prev.slice(0, -1)); // Remove placeholder on error
     } finally {
       setIsStreaming(false);
     }
@@ -287,8 +394,8 @@ const App: React.FC = () => {
       <main className="flex-grow grid grid-cols-[auto,1fr] gap-4 min-h-0">
         <div style={{ width: `${panelWidth}px` }} className="flex flex-col min-w-[380px] min-h-0">
           <Controls
-            prompt={prompt}
-            setPrompt={setPrompt}
+            prompt={userPrompt}
+            setPrompt={setUserPrompt}
             githubToken={githubToken}
             setGithubToken={setGithubToken}
             onGenerate={handleGenerate}
@@ -316,13 +423,15 @@ const App: React.FC = () => {
             markdown={markdown} 
             isLoading={isStreaming} 
             error={error} 
-            onRefine={handleRefine}
+            onSendMessage={handleSendMessage}
             isRefining={isStreaming}
             isChatModeEnabled={isChatModeEnabled}
-            historyIndex={historyIndex}
-            historyLength={history.length}
+            historyIndex={markdownHistoryIndex}
+            historyLength={markdownHistory.length}
             onUndo={handleUndo}
             onRedo={handleRedo}
+            chatHistory={chatHistory}
+            onApplyCode={handleApplyCode}
           />
         </div>
       </main>

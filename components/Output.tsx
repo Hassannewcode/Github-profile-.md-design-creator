@@ -6,32 +6,40 @@ import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { ClipboardIcon } from './icons/ClipboardIcon';
 import { CodeIcon } from './icons/CodeIcon';
 import { EyeIcon } from './icons/EyeIcon';
-import { SendIcon } from './icons/SendIcon';
 import { LoadingPlaceholder } from './LoadingPlaceholder';
 import { Tooltip } from './Tooltip';
 import { UndoIcon } from './icons/UndoIcon';
 import { RedoIcon } from './icons/RedoIcon';
+import { ChatPanel } from './ChatPanel';
 
+
+interface ChatMessage {
+  sender: 'user' | 'ai';
+  text: string;
+  markdown?: string;
+  id: number;
+}
 interface OutputProps {
   markdown: string;
   isLoading: boolean;
   isRefining: boolean;
   error: string | null;
-  onRefine: (prompt: string) => Promise<void>;
+  onSendMessage: (prompt: string) => Promise<void>;
   isChatModeEnabled: boolean;
   historyIndex: number;
   historyLength: number;
   onUndo: () => void;
   onRedo: () => void;
+  chatHistory: ChatMessage[];
+  onApplyCode: (markdown: string) => void;
 }
 
 export const Output: React.FC<OutputProps> = ({ 
-    markdown, isLoading, isRefining, error, onRefine, isChatModeEnabled, 
-    historyIndex, historyLength, onUndo, onRedo 
+    markdown, isLoading, isRefining, error, onSendMessage, isChatModeEnabled, 
+    historyIndex, historyLength, onUndo, onRedo, chatHistory, onApplyCode
 }) => {
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview');
-  const [refinementPrompt, setRefinementPrompt] = useState('');
   const [loadingMessages, setLoadingMessages] = useState<string[]>([]);
 
   useEffect(() => {
@@ -78,17 +86,6 @@ export const Output: React.FC<OutputProps> = ({
       setCopied(true);
     }
   };
-  
-  const handleRefineSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (refinementPrompt.trim() && !isRefining) {
-      try {
-        await onRefine(refinementPrompt);
-      } finally {
-        setRefinementPrompt('');
-      }
-    }
-  };
 
   const renderContent = () => {
     if (isLoading && !markdown) {
@@ -105,7 +102,7 @@ export const Output: React.FC<OutputProps> = ({
       if (activeTab === 'preview') return <LoadingPlaceholder />;
       return <TerminalAnimation />;
     }
-    if (error) {
+    if (error && !markdown) { // Only show full-screen error if there's no markdown to display
       return (
         <div className="flex flex-col items-center justify-center h-full text-center p-6">
             <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-6 max-w-md">
@@ -163,6 +160,10 @@ export const Output: React.FC<OutputProps> = ({
           @keyframes blink { from, to { color: transparent; } 50% { color: inherit; } }
           @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
           .animate-fadeIn { animation: fadeIn 0.5s ease-out forwards; opacity: 0; }
+          .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+          .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+          .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 3px; }
+          .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
         `}</style>
       <div className="flex justify-between items-center p-2.5 border-b border-white/10 flex-shrink-0">
         <div className="flex items-center gap-2 p-1 bg-black/30 rounded-lg">
@@ -193,29 +194,15 @@ export const Output: React.FC<OutputProps> = ({
         <div className="w-full h-full overflow-auto">{renderContent()}</div>
       </div>
       
-       {isChatModeEnabled && markdown && !isLoading && (
-         <div className="p-3 border-t border-white/10 bg-black/30 rounded-b-lg flex-shrink-0">
-           <div className="flex justify-between items-center mb-2">
-            <label htmlFor="refinement" className="text-sm font-medium text-gray-300">
-                Refine your design
-              </label>
-           </div>
-           <form onSubmit={handleRefineSubmit}>
-              <div className="relative">
-                <input
-                  id="refinement"
-                  value={refinementPrompt}
-                  onChange={(e) => setRefinementPrompt(e.target.value)}
-                  placeholder="e.g., 'make the background dark blue' or 'change the animation'"
-                  disabled={isRefining}
-                  className="w-full bg-black/50 border border-white/10 rounded-md p-2.5 pr-12 text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                />
-                <button type="submit" disabled={isRefining || !refinementPrompt.trim()} className="absolute right-1.5 top-1/5 flex items-center justify-center h-8 w-8 -translate-y-1/8 bg-blue-600 text-white p-1.5 rounded-md hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors" aria-label="Refine SVG" style={{top: '50%', transform: 'translateY(-50%)'}}>
-                  <SendIcon />
-                </button>
-              </div>
-           </form>
-         </div>
+       {isChatModeEnabled && (markdown || chatHistory.length > 0) && (
+        <ChatPanel
+          chatHistory={chatHistory}
+          isRefining={isRefining}
+          error={error}
+          onSendMessage={onSendMessage}
+          onApplyCode={onApplyCode}
+          markdown={markdown}
+        />
        )}
     </div>
   );
