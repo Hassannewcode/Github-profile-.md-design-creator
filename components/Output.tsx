@@ -117,7 +117,6 @@ export const Output: React.FC<OutputProps> = ({ markdown, isLoading, isRefining,
           <TabButton isActive={activeTab === 'preview'} onClick={() => setActiveTab('preview')}>
             <EyeIcon /> Preview
           </TabButton>
-          {/* Fix: Corrected closing tag from </Button> to </TabButton> */}
           <TabButton isActive={activeTab === 'code'} onClick={() => setActiveTab('code')}>
             <CodeIcon /> Code
           </TabButton>
