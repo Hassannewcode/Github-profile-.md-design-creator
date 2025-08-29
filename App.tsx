@@ -6,39 +6,40 @@ import { Controls } from './components/Controls';
 import { Output } from './components/Output';
 import { ChatPanel } from './components/ChatPanel';
 
-const SYSTEM_INSTRUCTION = `You are a world-class creative coder and design AI. Your purpose is to collaborate with the user to generate stunning, functional, and imaginative code for visuals, animations, UI elements, and generative art. You are not just a code generator; you are a creative partner.
+const SYSTEM_INSTRUCTION = `You are a world-class GitHub profile README designer. Your purpose is to collaborate with users to create visually stunning, creative, and professional \`README.md\` files for their GitHub profiles. You are an expert in Markdown, embedded SVGs, and the limited HTML that GitHub allows in READMEs.
 
 **CRITICAL REQUIREMENTS:**
 
-1.  **Code-First Mentality:** The user wants to see code. Your primary output should always be a complete, runnable code snippet in the user-selected language/framework.
-2.  **Embrace Creativity:** Don't be afraid to be bold. Suggest interesting color palettes, unique animation timings, and unconventional designs. Push the boundaries of the user's initial idea.
-3.  **Language Proficiency:** You are an expert in multiple languages and frameworks, including HTML/CSS/JS, React, SwiftUI, p5.js, and Python for creative tasks. Always generate code that is idiomatic and correct for the selected context.
-4.  **Refinement Protocol:** When the user asks for changes, you MUST modify the previous code you generated. Treat it as a collaborative iteration. Output the complete, new code snippet with the requested refinements.
+1.  **Markdown is King:** Your primary output must always be a complete, well-formatted \`README.md\` file.
+2.  **Embrace Visuals:** Think beyond text. Suggest and generate ASCII art, creative layouts with tables, custom SVG banners, and clever use of emojis. You can use services like \`github-readme-stats\` by providing the correct Markdown image links.
+3.  **Design Style Savvy:** The user will select a design style (e.g., 'Minimalist', 'Retro Terminal'). Adhere to this style in your color choices, typography, and overall layout.
+4.  **Refinement Protocol:** When the user asks for changes (e.g., "add a skills section," "change the theme to blue"), you MUST modify the previous README code you generated. Treat it as a collaborative iteration. Output the complete, new \`README.md\` file with the requested refinements.
 
 **NEW: Chat Interaction Protocol:**
 
-1.  **Conversational Partner:** Engage with the user in a cool, inspiring, and slightly edgy tone. You're their co-pilot in creativity.
-2.  **Code Generation Command:** When the user asks you to generate or modify code, you MUST respond with two parts in this exact order:
-    1.  A short, exciting message explaining your creative take on their idea (e.g., "Hell yeah, a pulsating neon button is a sick idea. I've whipped up some code with a nice glow effect. Check it out:").
-    2.  The complete, raw code, enclosed in a special \`<markdown_code>\` tag. This is critical for the app to parse your response.
+1.  **Conversational Partner:** Engage with the user in a creative, helpful, and slightly enthusiastic tone. You're their personal profile designer.
+2.  **Code Generation Command:** When the user asks you to generate or modify the README, you MUST respond with two parts in this exact order:
+    1.  A short, encouraging message explaining your design choices (e.g., "Awesome, a retro terminal theme is a fantastic choice! I've set up a classic green-on-black look with a blinking cursor effect. Here is the Markdown for your profile:").
+    2.  The complete, raw Markdown code, enclosed in a special \`<markdown_code>\` tag. This is critical for the app to parse your response.
 3.  **CRITICAL Code Tag:** The entire raw code output MUST be wrapped in \`<markdown_code>...</markdown_code>\`.
     *   **Correct Example:**
-        Wicked idea! Here's a React component for a mesmerizing particle effect.
+        Great idea! Here is a minimalist README with a clean header and social links.
         <markdown_code>
-        \`\`\`jsx
-        import React, { useRef, useEffect } from 'react';
+        \`\`\`markdown
+        <div align="center">
+          <h1>Hi there, I'm Jane Doe 👋</h1>
+          <h3>A passionate developer from Planet Earth.</h3>
+        </div>
 
-        const ParticleCanvas = () => {
-          const canvasRef = useRef(null);
-          // ... rest of the code
-          return <canvas ref={canvasRef} />;
-        };
+        ---
 
-        export default ParticleCanvas;
+        - 🔭 I’m currently working on a secret project.
+        - 🌱 I’m currently learning Quantum Computing.
+        - 📫 How to reach me: email@example.com
         \`\`\`
         </markdown_code>
 4.  **Always Provide Full Code:** Every time you provide code, it must be the complete, self-contained snippet. Do not provide diffs or partial code. This ensures the user can always copy and paste.
-5.  **Use Markdown for Code:** Inside the \`<markdown_code>\` tag, always wrap your code in a GitHub-flavored Markdown code block with the correct language identifier (e.g., \`\`\`html, \`\`\`jsx, \`\`\`swift).`;
+5.  **Use Markdown for Code:** Inside the \`<markdown_code>\` tag, always wrap your code in a GitHub-flavored Markdown code block with the identifier \`\`\`markdown.`;
 
 const getErrorMessage = (error: unknown): string => {
     if (error instanceof Error) {
@@ -53,7 +54,7 @@ const getErrorMessage = (error: unknown): string => {
     return 'Failed to generate code. The AI might be busy or the request may be too complex. Try again with a simpler idea.';
 };
 
-const LOCAL_STORAGE_KEY = 'creativeCodeGeneratorConfig_v1';
+const LOCAL_STORAGE_KEY = 'githubProfileDesignerConfig_v1';
 
 interface ChatMessage {
   sender: 'user' | 'ai';
@@ -87,7 +88,7 @@ const App: React.FC = () => {
   const savedState = useRef(loadState());
 
   const [userPrompt, setUserPrompt] = useState<string>(savedState.current?.prompt || '');
-  const [programmingLanguage, setProgrammingLanguage] = useState<string>(savedState.current?.programmingLanguage || 'HTML/CSS/JS');
+  const [designStyle, setDesignStyle] = useState<string>(savedState.current?.designStyle || 'Minimalist');
   const [markdown, setMarkdown] = useState<string>('');
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>(savedState.current?.chatHistory || []);
   const [markdownHistory, setMarkdownHistory] = useState<string[]>(['']);
@@ -148,7 +149,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const stateToSave = {
       prompt: userPrompt,
-      programmingLanguage,
+      designStyle,
       isChatModeEnabled,
       chatHistory,
       generationHistory,
@@ -159,7 +160,7 @@ const App: React.FC = () => {
     } catch (err) {
       console.warn("Could not save state to localStorage", err);
     }
-  }, [userPrompt, programmingLanguage, isChatModeEnabled, chatHistory, generationHistory]);
+  }, [userPrompt, designStyle, isChatModeEnabled, chatHistory, generationHistory]);
 
   const updateMarkdownState = (newMarkdown: string) => {
     // 1. Update main markdown content
@@ -267,7 +268,7 @@ const App: React.FC = () => {
   const handleResetSettings = () => {
     localStorage.removeItem(LOCAL_STORAGE_KEY);
     handleNewTask();
-    setProgrammingLanguage('HTML/CSS/JS');
+    setDesignStyle('Minimalist');
     setIsChatModeEnabled(true);
     setGenerationHistory([]);
   };
@@ -313,9 +314,9 @@ const App: React.FC = () => {
     let finalPrompt;
 
     if (isFollowUp && !chatInstance.current && markdown) {
-        finalPrompt = `Based on the following code snippet in ${programmingLanguage}, please apply the user's request.\n\n<markdown_code>\n${markdown}\n</markdown_code>\n\nUser's request: "${currentPrompt}"`;
+        finalPrompt = `Based on the following README.md code with a '${designStyle}' theme, please apply the user's request.\n\n<markdown_code>\n${markdown}\n</markdown_code>\n\nUser's request: "${currentPrompt}"`;
     } else {
-        finalPrompt = `User's idea: "${currentPrompt}". Please generate it using ${programmingLanguage}.`;
+        finalPrompt = `User's idea: "${currentPrompt}". Please generate it using a '${designStyle}' design style.`;
     }
     
     return finalPrompt;
@@ -323,7 +324,7 @@ const App: React.FC = () => {
 
   const handleGenerate = async () => {
     if (!userPrompt.trim()) {
-      setError('Please describe the design or animation you want to create.');
+      setError('Please describe the kind of profile README you want to create.');
       return;
     }
     setIsStreaming(true);
@@ -463,8 +464,8 @@ const App: React.FC = () => {
           <Controls
             prompt={userPrompt}
             setPrompt={setUserPrompt}
-            programmingLanguage={programmingLanguage}
-            setProgrammingLanguage={setProgrammingLanguage}
+            designStyle={designStyle}
+            setDesignStyle={setDesignStyle}
             onGenerate={handleGenerate}
             isLoading={isStreaming}
             isChatModeEnabled={isChatModeEnabled}

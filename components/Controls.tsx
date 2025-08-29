@@ -13,8 +13,8 @@ interface GenerationHistoryItem {
 interface ControlsProps {
   prompt: string;
   setPrompt: (prompt: string) => void;
-  programmingLanguage: string;
-  setProgrammingLanguage: (language: string) => void;
+  designStyle: string;
+  setDesignStyle: (language: string) => void;
   onGenerate: () => void;
   isLoading: boolean;
   isChatModeEnabled: boolean;
@@ -28,20 +28,20 @@ interface ControlsProps {
 }
 
 const examplePrompts = [
-    "A pulsating button with a neon blue glow effect.",
-    "Generative art with swirling particles that follow the mouse.",
-    "A responsive card component with a flip animation on hover.",
-    "An animated loading spinner with three orbiting dots.",
-    "A retro, CRT screen text effect.",
+    "A simple, clean profile with an intro and social media links.",
+    "A retro terminal README with a 'currently hacking on' section.",
+    "A cyberpunk theme with neon text and a cool ASCII art header.",
+    "A professional banner with my name, title, and key skills listed.",
+    "A playful design using lots of emojis and a 'fun facts' section.",
 ];
 
-const LANGUAGES = ['HTML/CSS/JS', 'React', 'SwiftUI', 'p5.js', 'Python', 'SVG'];
+const DESIGN_STYLES = ['Minimalist', 'Retro Terminal', 'Cyberpunk', 'Sleek & Modern', 'Playful', 'Corporate'];
 
 export const Controls: React.FC<ControlsProps> = ({ 
   prompt, 
   setPrompt, 
-  programmingLanguage,
-  setProgrammingLanguage,
+  designStyle,
+  setDesignStyle,
   onGenerate, 
   isLoading,
   isChatModeEnabled,
@@ -96,16 +96,16 @@ export const Controls: React.FC<ControlsProps> = ({
             <div className="flex-grow p-4 space-y-5 overflow-y-auto min-h-0 custom-scrollbar">
                 <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Language / Framework
+                        Design Style
                     </label>
                     <div className="grid grid-cols-3 gap-2">
-                        {LANGUAGES.map(lang => (
+                        {DESIGN_STYLES.map(style => (
                             <button 
-                                key={lang}
-                                onClick={() => setProgrammingLanguage(lang)}
-                                className={`text-center text-sm px-3 py-2 rounded-md border transition-colors ${programmingLanguage === lang ? 'bg-blue-600 border-blue-500 text-white font-semibold' : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'}`}
+                                key={style}
+                                onClick={() => setDesignStyle(style)}
+                                className={`text-center text-sm px-3 py-2 rounded-md border transition-colors ${designStyle === style ? 'bg-blue-600 border-blue-500 text-white font-semibold' : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'}`}
                             >
-                                {lang}
+                                {style}
                             </button>
                         ))}
                     </div>
@@ -113,7 +113,7 @@ export const Controls: React.FC<ControlsProps> = ({
 
                 <div>
                 <label htmlFor="prompt" className="block text-sm font-medium text-gray-300 mb-2">
-                    Describe your design or animation
+                    Describe your ideal profile README
                 </label>
                 <textarea 
                     name="prompt" 
@@ -122,10 +122,10 @@ export const Controls: React.FC<ControlsProps> = ({
                     onChange={(e) => setPrompt(e.target.value)} 
                     className="w-full bg-black/50 border border-white/10 rounded-md p-3 text-gray-200 placeholder-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 resize-none"
                     rows={5} 
-                    placeholder="e.g., A sleek, dark-themed login form with a subtle glowing border on focus."
+                    placeholder="e.g., A sleek, modern profile for a full-stack developer, highlighting my work with React and Node.js."
                     aria-describedby="prompt-feedback"
                 />
-                {!prompt.trim() && <p id="prompt-feedback" className="text-xs text-gray-500 mt-1.5">Describe the cool thing you want to create.</p>}
+                {!prompt.trim() && <p id="prompt-feedback" className="text-xs text-gray-500 mt-1.5">Describe the README you want to create.</p>}
                 </div>
 
                 <div>
@@ -147,7 +147,7 @@ export const Controls: React.FC<ControlsProps> = ({
                     <h3 className="text-sm font-medium text-gray-300 mb-3">Settings</h3>
                     <div className="space-y-4">
                         <div className="flex justify-between items-center">
-                            <Tooltip text="Enable conversation mode to refine your code iteratively.">
+                            <Tooltip text="Enable conversation mode to refine your README iteratively.">
                                 <label className="text-sm font-medium text-gray-200 cursor-help">Chat Mode</label>
                             </Tooltip>
                             <div className="relative inline-flex items-center">
@@ -172,7 +172,7 @@ export const Controls: React.FC<ControlsProps> = ({
                 className="w-full flex items-center justify-center gap-2 text-white font-semibold bg-gradient-to-r from-blue-600 to-blue-500 px-6 py-3 rounded-md transition-all duration-300 ease-in-out disabled:opacity-40 disabled:cursor-not-allowed hover:from-blue-700 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-500"
                 >
                 <SparklesIcon />
-                <span>{isLoading ? 'Generating...' : 'Generate'}</span>
+                <span>{isLoading ? 'Designing...' : 'Design Profile'}</span>
                 </button>
             </div>
         </>
@@ -195,7 +195,7 @@ export const Controls: React.FC<ControlsProps> = ({
           </div>
           {generationHistory.length === 0 ? (
             <div className="flex-grow flex items-center justify-center text-center text-gray-500">
-              <p>Your generated code snippets will appear here.</p>
+              <p>Your generated READMEs will appear here.</p>
             </div>
           ) : (
             <div className="flex-grow overflow-y-auto space-y-2 custom-scrollbar -mr-2 pr-2">

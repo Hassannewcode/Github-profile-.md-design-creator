@@ -54,9 +54,9 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   const hasChatStarted = chatHistory.length > 0 || isRefining;
 
   const getPlaceholderText = () => {
-    if (isRefining) return "AI is thinking...";
-    if (markdown) return "e.g., 'Make the animation faster'";
-    return "Generate some code first to start chatting...";
+    if (isRefining) return "AI is designing...";
+    if (markdown) return "e.g., 'Add a section for my tech stack'";
+    return "Design a README first to start chatting...";
   };
 
   return (
@@ -64,7 +64,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
       <div className="p-4 border-b border-white/10 flex justify-between items-center flex-shrink-0">
         <div>
             <h2 className="text-md font-semibold text-gray-100">AI Co-pilot</h2>
-            <p className="text-sm text-gray-400">Refine your code.</p>
+            <p className="text-sm text-gray-400">Refine your README.</p>
         </div>
         <Tooltip text="Refresh Chat">
             <button
@@ -80,7 +80,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
       
       {!hasChatStarted ? (
         <div className="flex-grow flex items-center justify-center text-center text-gray-500 p-4">
-          <p>Generate some code first, then you can chat with the AI here to make changes.</p>
+          <p>Design a README first, then you can chat with the AI here to make changes.</p>
         </div>
       ) : (
         <>

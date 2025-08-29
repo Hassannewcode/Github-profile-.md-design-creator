@@ -27,18 +27,18 @@ export const Output: React.FC<OutputProps> = ({
     historyIndex, historyLength, onUndo, onRedo
 }) => {
   const [copied, setCopied] = useState(false);
-  const [activeTab, setActiveTab] = useState<'preview' | 'code'>('code');
+  const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview');
   const [loadingMessages, setLoadingMessages] = useState<string[]>([]);
 
   useEffect(() => {
     let intervalId: ReturnType<typeof setInterval> | undefined;
     if (isLoading && !markdown) {
       const allMessages = [
-        'Booting AI core...',
-        'Analyzing creative request...',
+        'Booting AI design core...',
+        'Analyzing profile request...',
         'Engaging aesthetic subroutines...',
-        'Compiling code...',
-        'Streaming initial response...',
+        'Generating Markdown...',
+        'Finalizing layout...',
       ];
       setLoadingMessages([allMessages[0]]);
       let messageIndex = 1;
@@ -77,7 +77,7 @@ export const Output: React.FC<OutputProps> = ({
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'code-snippet.md';
+      a.download = 'README.md';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -152,8 +152,8 @@ export const Output: React.FC<OutputProps> = ({
     }
     return (
       <div className="text-center text-gray-600 flex flex-col items-center justify-center h-full p-4">
-        <p className="text-lg">Your creative code will appear here.</p>
-        <p className="text-sm mt-1">Describe an idea, pick a language, and click "Generate".</p>
+        <p className="text-lg">Your GitHub profile README will appear here.</p>
+        <p className="text-sm mt-1">Describe your ideal profile, pick a style, and click "Design Profile".</p>
       </div>
     );
   };
@@ -207,13 +207,13 @@ export const Output: React.FC<OutputProps> = ({
               </div>
 
             <div className="flex items-center gap-2">
-                <Tooltip text="Download as code-snippet.md" position="left">
+                <Tooltip text="Download as README.md" position="left">
                   <button onClick={handleDownload} className="px-3 py-2 bg-white/5 rounded-md hover:bg-white/10 transition text-gray-300 flex items-center gap-2 text-sm border border-white/10" aria-label="Download markdown file">
                     <DownloadIcon />
                     Download
                   </button>
                 </Tooltip>
-                <Tooltip text="Copy Code" position="left">
+                <Tooltip text="Copy Markdown" position="left">
                   <button onClick={handleCopy} className="px-3 py-2 bg-white/5 rounded-md hover:bg-white/10 transition text-gray-300 flex items-center gap-2 text-sm border border-white/10" aria-label="Copy markdown">
                     <ClipboardIcon /> {copied ? 'Copied!' : 'Copy'}
                   </button>
