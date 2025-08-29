@@ -14,8 +14,8 @@ interface GenerationHistoryItem {
 interface ControlsProps {
   prompt: string;
   setPrompt: (prompt: string) => void;
-  designStyle: string;
-  setDesignStyle: (style: string) => void;
+  selectedLanguages: string[];
+  setSelectedLanguages: (languages: string[]) => void;
   githubToken: string;
   setGithubToken: (token: string) => void;
   onGenerate: () => void;
@@ -38,13 +38,13 @@ const examplePrompts = [
     "A clean, minimalist profile with just an intro and my GitHub stats.",
 ];
 
-const DESIGN_STYLES = ['Cyberpunk', 'Retro', 'Minimalist', 'Synthwave', 'Corporate', 'Playful'];
+const PROGRAMMING_LANGUAGES = ['JavaScript', 'TypeScript', 'Python', 'Java', 'Go', 'Rust', 'C++', 'Ruby', 'PHP'];
 
 export const Controls: React.FC<ControlsProps> = ({ 
   prompt, 
   setPrompt, 
-  designStyle,
-  setDesignStyle,
+  selectedLanguages,
+  setSelectedLanguages,
   githubToken,
   setGithubToken,
   onGenerate, 
@@ -63,6 +63,13 @@ export const Controls: React.FC<ControlsProps> = ({
   const handleExampleClick = (example: string) => {
     setPrompt(example);
     setActiveTab('controls');
+  };
+  
+  const handleLanguageToggle = (lang: string) => {
+    const newLangs = selectedLanguages.includes(lang)
+        ? selectedLanguages.filter(l => l !== lang)
+        : [...selectedLanguages, lang];
+    setSelectedLanguages(newLangs);
   };
 
   const isGenerateDisabled = isLoading || !prompt.trim();
@@ -101,16 +108,16 @@ export const Controls: React.FC<ControlsProps> = ({
             <div className="flex-grow p-4 space-y-5 overflow-y-auto min-h-0 custom-scrollbar">
                 <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Design Style
+                        Primary Languages
                     </label>
                     <div className="grid grid-cols-3 gap-2">
-                        {DESIGN_STYLES.map(style => (
+                        {PROGRAMMING_LANGUAGES.map(lang => (
                             <button 
-                                key={style}
-                                onClick={() => setDesignStyle(style)}
-                                className={`text-center text-sm px-3 py-2 rounded-md border transition-colors ${designStyle === style ? 'bg-blue-600 border-blue-500 text-white font-semibold' : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'}`}
+                                key={lang}
+                                onClick={() => handleLanguageToggle(lang)}
+                                className={`text-center text-sm px-3 py-2 rounded-md border transition-colors ${selectedLanguages.includes(lang) ? 'bg-blue-600 border-blue-500 text-white font-semibold' : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'}`}
                             >
-                                {style}
+                                {lang}
                             </button>
                         ))}
                     </div>

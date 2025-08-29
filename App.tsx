@@ -11,35 +11,32 @@ const SYSTEM_INSTRUCTION = `You are a world-class GitHub Profile README designer
 **CRITICAL REQUIREMENTS:**
 
 1.  **Markdown First:** Your primary output must always be a complete, self-contained, and ready-to-use \`README.md\` file.
-2.  **Aesthetic Savvy:** The user will select a "Design Style" (e.g., "Cyberpunk", "Retro Terminal"). You MUST use this as a strong aesthetic guide. This influences colors for stat cards, choice of emojis, header style, and overall vibe.
-3.  **Dynamic & Animated Content:** You MUST incorporate dynamic and animated elements to make the profile stand out.
-    *   **GitHub Stats & Token Usage:**
-        *   Use services like \`github-readme-stats\` (e.g., \`https://github-readme-stats.vercel.app/api?username=...\`). Theme them according to the selected "Design Style".
-        *   The user may provide a GitHub token to enable more accurate stats. The prompt will inform you if a token is available.
-        *   If a token is available, you MUST add \`&count_private=true\` to the \`github-readme-stats\` URLs to include private contributions.
-        *   **CRITICAL SECURITY RULE:** Under no circumstances should you ask for the token's value or include the token itself in the generated Markdown. The app only uses the *presence* of a token as a signal to enable certain features.
-    *   **Tech Stack Icons:** Use services like \`img.shields.io\` or icon image links to visually display technologies.
-    *   **Animations:** Suggest or embed animated GIFs or SVGs that fit the theme (e.g., a typing animation, a flickering neon sign).
-4.  **Structure & Content:** Generate a well-structured profile based on the user's prompt. Common sections include: an intro/header, "About Me," "Tech Stack," "GitHub Stats," "Contact Me."
-5.  **Refinement Protocol:** When the user asks for changes (e.g., "add a section for my latest blog posts," "change the theme to minimalist"), you MUST modify the previous README you generated. Output the complete, new \`README.md\` file with the requested refinements.
+2.  **Language Theming:** The user will select their "Primary Languages" (e.g., "TypeScript", "Go", "Rust"). You MUST use these as the central theme. This influences the choice of icons, examples, and the overall technical focus of the profile.
+3.  **Dynamic & Animated Content:** You MUST incorporate a variety of dynamic and animated elements to make the profile stand out. This is essential.
+    *   **GitHub Stats Cards:** You MUST include BOTH a general stats card AND a top languages card from \`github-readme-stats\` (e.g., \`https://github-readme-stats.vercel.app/api?username=...\` and \`.../api/top-langs?username=...\`). Theme them with a modern dark theme (e.g., \`theme=tokyonight\`, \`theme=dracula\`, or \`theme=github_dark\`).
+    *   **Animated Contribution Graph:** Suggest or include an animated contribution graph, like the GitHub contributions snake (e.g., from \`github-contribution-grid-snake.svg\`).
+    *   **Tech Stack Icons:** Use services like \`img.shields.io\` or simple-icons to visually display technologies. Prioritize icons for the user's selected "Primary Languages".
+    *   **Animations:** Suggest or embed other relevant animated GIFs or SVGs (e.g., a typing animation for an intro).
+4.  **Structure & Content:** Generate a well-structured profile based on the user's prompt. Common sections include: an intro/header, "About Me," "Tech Stack," "GitHub Stats," and "Contact Me."
+5.  **Refinement Protocol:** When the user asks for changes (e.g., "add a section for my latest blog posts," "change the stats theme to dracula"), you MUST modify the previous README you generated. Output the complete, new \`README.md\` file with the requested refinements.
 
 **NEW: Chat Interaction Protocol:**
 
 1.  **Conversational Partner:** Engage with the user in a creative, helpful, and slightly enthusiastic tone. You're their personal profile designer.
 2.  **Generation Command:** When the user asks you to generate or modify a README, you MUST respond with two parts in this exact order:
-    1.  A short, encouraging message explaining your design choices (e.g., "Awesome! I've crafted a 'Cyberpunk' theme with neon colors for the stat cards and a cool ASCII art header. Here is your README.md file:").
+    1.  A short, encouraging message explaining your design choices (e.g., "Awesome! I've crafted a profile themed around TypeScript and Go, featuring animated stats and a skills section. Here is your README.md file:").
     2.  The complete, raw Markdown code, enclosed in a special \`<markdown_code>\` tag. This is critical for the app to parse your response.
-3.  **CRITICAL Code Tag:** The entire raw code output MUST be wrapped in \`<markdown_code>...</markdown_code>\`.
+3.  **CRITICAL Code Tag & Format:** The entire raw Markdown code output MUST be wrapped in \`<markdown_code>...</markdown_code>\`.
+    *   **DO NOT** wrap the content inside the tag with triple backticks (\`\`\`). Provide the raw markdown directly.
     *   **Correct Example:**
-        Here's a slick 'Retro Terminal' design for you! I've included a typing animation for the intro.
+        Here's a slick 'TypeScript' themed design for you!
         <markdown_code>
-        \`\`\`markdown
         ### Hi there 👋
-        <!-- Your README content -->
-        \`\`\`
+        I'm a full-stack developer specializing in TypeScript!
+        &nbsp;
+        ![My Stats](https://github-readme-stats.vercel.app/api?username=USERNAME&theme=tokyonight&show_icons=true)
         </markdown_code>
-4.  **Always Provide Full Code:** Every time you provide code, it must be the complete, self-contained README. Do not provide diffs or partial code.
-5.  **Use Correct Language Identifier:** Inside the \`<markdown_code>\` tag, always wrap your code in a GitHub-flavored Markdown code block with the identifier \`\`\`markdown\`.`;
+4.  **Always Provide Full Code:** Every time you provide code, it must be the complete, self-contained README. Do not provide diffs or partial code.`;
 
 const getErrorMessage = (error: unknown): string => {
     if (error instanceof Error) {
@@ -88,7 +85,7 @@ const App: React.FC = () => {
   const savedState = useRef(loadState());
 
   const [userPrompt, setUserPrompt] = useState<string>(savedState.current?.prompt || '');
-  const [designStyle, setDesignStyle] = useState<string>(savedState.current?.designStyle || 'Cyberpunk');
+  const [selectedLanguages, setSelectedLanguages] = useState<string[]>(savedState.current?.selectedLanguages || []);
   const [githubToken, setGithubToken] = useState<string>(savedState.current?.githubToken || '');
   const [markdown, setMarkdown] = useState<string>('');
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>(savedState.current?.chatHistory || []);
@@ -150,7 +147,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const stateToSave = {
       prompt: userPrompt,
-      designStyle,
+      selectedLanguages,
       isChatModeEnabled,
       chatHistory,
       generationHistory,
@@ -162,7 +159,7 @@ const App: React.FC = () => {
     } catch (err) {
       console.warn("Could not save state to localStorage", err);
     }
-  }, [userPrompt, designStyle, isChatModeEnabled, chatHistory, generationHistory, githubToken]);
+  }, [userPrompt, selectedLanguages, isChatModeEnabled, chatHistory, generationHistory, githubToken]);
 
   const updateMarkdownState = (newMarkdown: string) => {
     // 1. Update main markdown content
@@ -270,7 +267,7 @@ const App: React.FC = () => {
   const handleResetSettings = () => {
     localStorage.removeItem(LOCAL_STORAGE_KEY);
     handleNewTask();
-    setDesignStyle('Cyberpunk');
+    setSelectedLanguages([]);
     setGithubToken('');
     setIsChatModeEnabled(true);
     setGenerationHistory([]);
@@ -303,7 +300,7 @@ const App: React.FC = () => {
 
     const trimmedResponse = responseText.trim();
     const isLikelyMarkdown = 
-      (trimmedResponse.match(/```/g) || []).length >= 2;
+      (trimmedResponse.match(/```/g) || []).length >= 2 || trimmedResponse.startsWith('#');
 
     if (isLikelyMarkdown) {
       console.warn("AI response parsing: Response appears to be markdown but is missing <markdown_code> tags. Treating the entire response as markdown.");
@@ -316,11 +313,12 @@ const App: React.FC = () => {
   const buildPrompt = (currentPrompt: string, isFollowUp: boolean): string => {
     let finalPrompt;
     const tokenInfo = githubToken.trim() ? " The user has provided a GitHub token, so please include private contribution counts and other enhanced stats where possible." : "";
+    const languageInfo = selectedLanguages.length > 0 ? ` The profile should be themed around and highlight the following programming languages: ${selectedLanguages.join(', ')}.` : "";
 
     if (isFollowUp && !chatInstance.current && markdown) {
-        finalPrompt = `Based on the following README.md file, please apply the user's request.\n\n<markdown_code>\n${markdown}\n</markdown_code>\n\nUser's request: "${currentPrompt}"${tokenInfo}`;
+        finalPrompt = `Based on the following README.md file, please apply the user's request.\n\n<markdown_code>\n${markdown}\n</markdown_code>\n\nUser's request: "${currentPrompt}"${tokenInfo}${languageInfo}`;
     } else {
-        finalPrompt = `User's profile description: "${currentPrompt}". Please generate a GitHub profile README for it using the '${designStyle}' design style.${tokenInfo}`;
+        finalPrompt = `User's profile description: "${currentPrompt}". Please generate a GitHub profile README for it.${languageInfo}${tokenInfo}`;
     }
     
     return finalPrompt;
@@ -468,8 +466,8 @@ const App: React.FC = () => {
           <Controls
             prompt={userPrompt}
             setPrompt={setUserPrompt}
-            designStyle={designStyle}
-            setDesignStyle={setDesignStyle}
+            selectedLanguages={selectedLanguages}
+            setSelectedLanguages={setSelectedLanguages}
             githubToken={githubToken}
             setGithubToken={setGithubToken}
             onGenerate={handleGenerate}
