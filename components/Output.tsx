@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -9,6 +7,10 @@ import { ClipboardIcon } from './icons/ClipboardIcon';
 import { CodeIcon } from './icons/CodeIcon';
 import { EyeIcon } from './icons/EyeIcon';
 import { SendIcon } from './icons/SendIcon';
+import { LoadingPlaceholder } from './LoadingPlaceholder';
+import { Tooltip } from './Tooltip';
+import { UndoIcon } from './icons/UndoIcon';
+import { RedoIcon } from './icons/RedoIcon';
 
 interface OutputProps {
   markdown: string;
@@ -17,18 +19,50 @@ interface OutputProps {
   error: string | null;
   onRefine: (prompt: string) => Promise<void>;
   isChatModeEnabled: boolean;
+  historyIndex: number;
+  historyLength: number;
+  onUndo: () => void;
+  onRedo: () => void;
 }
 
-export const Output: React.FC<OutputProps> = ({ markdown, isLoading, isRefining, error, onRefine, isChatModeEnabled }) => {
+export const Output: React.FC<OutputProps> = ({ 
+    markdown, isLoading, isRefining, error, onRefine, isChatModeEnabled, 
+    historyIndex, historyLength, onUndo, onRedo 
+}) => {
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview');
   const [refinementPrompt, setRefinementPrompt] = useState('');
+  const [loadingMessages, setLoadingMessages] = useState<string[]>([]);
 
-  // Reset to preview tab whenever new markdown is generated
   useEffect(() => {
-    if (markdown) {
-      setActiveTab('preview');
+    let intervalId: ReturnType<typeof setInterval> | undefined;
+    if (isLoading && !markdown) {
+      const allMessages = [
+        'Booting AI core...',
+        'Analyzing creative request...',
+        'Engaging aesthetic subroutines...',
+        'Calibrating SVG vector matrix...',
+        'Streaming initial response...',
+      ];
+      setLoadingMessages([allMessages[0]]);
+      let messageIndex = 1;
+      intervalId = setInterval(() => {
+        if (messageIndex < allMessages.length) {
+          setLoadingMessages(prev => [...prev, allMessages[messageIndex]]);
+          messageIndex++;
+        } else {
+          clearInterval(intervalId);
+        }
+      }, 700);
     }
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+      if (!isLoading) setLoadingMessages([]);
+    };
+  }, [isLoading, markdown]);
+
+  useEffect(() => {
+    if (markdown) setActiveTab('preview');
   }, [markdown]);
   
   useEffect(() => {
@@ -51,7 +85,6 @@ export const Output: React.FC<OutputProps> = ({ markdown, isLoading, isRefining,
       try {
         await onRefine(refinementPrompt);
       } finally {
-        // This ensures the input is cleared after the AI operation completes, even if it fails.
         setRefinementPrompt('');
       }
     }
@@ -59,177 +92,125 @@ export const Output: React.FC<OutputProps> = ({ markdown, isLoading, isRefining,
 
   const renderContent = () => {
     if (isLoading && !markdown) {
-      return (
-        <div className="flex flex-col items-center justify-center text-center text-gray-400">
-          <p className="font-semibold">AI is starting to generate...</p>
-          <p className="text-sm">The code will appear here live as it's created.</p>
+      const TerminalAnimation = () => (
+        <div className="flex flex-col items-start justify-start w-full h-full p-6 font-mono text-sm text-gray-400">
+            {loadingMessages.map((msg, index) => (
+                <p key={index} className="whitespace-pre-wrap animate-fadeIn" style={{ animationDelay: `${index * 100}ms` }}>
+                  <span className="text-cyan-400/80 mr-2">{'>'}</span>{msg}
+                </p>
+            ))}
+            <div className="blinking-cursor mt-2 text-cyan-400 text-lg">▋</div>
         </div>
       );
+      if (activeTab === 'preview') return <LoadingPlaceholder />;
+      return <TerminalAnimation />;
     }
     if (error) {
-      return <div className="text-red-400 text-center p-4">{error}</div>;
+      return (
+        <div className="flex flex-col items-center justify-center h-full text-center p-6">
+            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-6 max-w-md">
+                <h3 className="text-lg font-semibold text-red-300 mb-2">Generation Failed</h3>
+                <p className="text-red-300/80 text-sm">{error}</p>
+            </div>
+        </div>
+      );
     }
     if (markdown) {
       if (activeTab === 'preview') {
         return (
             <div className="markdown-preview p-6 w-full">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {markdown}
-                </ReactMarkdown>
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{markdown}</ReactMarkdown>
             </div>
         );
       }
-      // Code tab
       return (
-        <SyntaxHighlighter
-          language="markdown"
-          style={vscDarkPlus}
-          customStyle={{
-            margin: 0,
-            padding: '1rem',
-            backgroundColor: '#111827',
-            width: '100%',
-            height: '100%',
-          }}
-          codeTagProps={{
-            style: {
-              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
-            }
-          }}
-          wrapLongLines={true}
-        >
+        <SyntaxHighlighter language="markdown" style={vscDarkPlus} customStyle={{ margin: 0, padding: '1.5rem', backgroundColor: 'transparent', width: '100%', height: '100%' }} codeTagProps={{ style: { fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace' } }} wrapLongLines={true}>
           {markdown}
         </SyntaxHighlighter>
       );
     }
     return (
-      <div className="text-center text-gray-500">
-        <p>Your generated README.md code will appear here.</p>
+      <div className="text-center text-gray-600 flex flex-col items-center justify-center h-full p-4">
+        <p className="text-lg">Your generated masterpiece will appear here.</p>
         <p className="text-sm mt-1">Describe an idea and click "Generate".</p>
       </div>
     );
   };
   
   const TabButton = ({ isActive, onClick, children }: { isActive: boolean; onClick: () => void; children: React.ReactNode }) => (
-    <button
-        onClick={onClick}
-        className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-t-md transition-colors ${
-          isActive
-            ? 'bg-gray-900 text-purple-400 border-b-2 border-purple-400'
-            : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
-        }`}
-      >
+    <button onClick={onClick} className={`flex items-center gap-2 px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${isActive ? 'bg-white/10 text-white' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}>
         {children}
     </button>
   );
 
+  const canUndo = historyIndex > 0;
+  const canRedo = historyIndex < historyLength - 1;
+
   return (
-    <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-lg shadow-lg flex flex-col h-full">
+    <div className="bg-[#0A0A0A]/60 border border-white/10 rounded-lg shadow-2xl flex flex-col h-full backdrop-blur-md">
       <style>{`
-          .markdown-preview h1, .markdown-preview h2, .markdown-preview h3, .markdown-preview h4, .markdown-preview h5, .markdown-preview h6 {
-            margin-top: 1.5em;
-            margin-bottom: 1em;
-            font-weight: 600;
-          }
-          .markdown-preview h1 { font-size: 2em; border-bottom: 1px solid #4a5568; padding-bottom: 0.3em; }
-          .markdown-preview h2 { font-size: 1.5em; border-bottom: 1px solid #4a5568; padding-bottom: 0.3em; }
-          .markdown-preview h3 { font-size: 1.25em; }
-          .markdown-preview p { line-height: 1.6; margin-bottom: 1em; }
-          .markdown-preview a { color: #a78bfa; text-decoration: none; }
-          .markdown-preview a:hover { text-decoration: underline; }
-          .markdown-preview code {
-            background-color: rgb(17 24 39 / 1);
-            color: #d1d5db;
-            padding: .2em .4em;
-            margin: 0;
-            font-size: 85%;
-            border-radius: 6px;
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-          }
-          .markdown-preview pre {
-            background-color: #111827;
-            padding: 1rem;
-            border-radius: 0.375rem;
-            overflow-x: auto;
-            margin-bottom: 1em;
-          }
-          .markdown-preview pre code {
-            padding: 0;
-            background-color: transparent;
-            color: inherit;
-          }
-          .markdown-preview img {
-            max-width: 100%;
-            height: auto;
-            display: block;
-            margin-left: auto;
-            margin-right: auto;
-            margin-top: 1em;
-            margin-bottom: 1em;
-            background-color: #fff;
-          }
-           .markdown-preview ul, .markdown-preview ol {
-            padding-left: 2em;
-            margin-bottom: 1em;
-          }
-          .markdown-preview li {
-            margin-bottom: 0.25em;
-          }
-          .markdown-preview blockquote {
-            padding: 0 1em;
-            color: #9ca3af;
-            border-left: 0.25em solid #4b5563;
-            margin-bottom: 1em;
-          }
+          .markdown-preview h1, .markdown-preview h2, .markdown-preview h3 { color: #E5E7EB; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.3em; margin: 1.5em 0 1em; }
+          .markdown-preview h1 { font-size: 2em; } .markdown-preview h2 { font-size: 1.5em; } .markdown-preview h3 { font-size: 1.25em; }
+          .markdown-preview p { line-height: 1.6; margin-bottom: 1em; color: #D1D5DB; }
+          .markdown-preview a { color: #60A5FA; text-decoration: none; } .markdown-preview a:hover { text-decoration: underline; }
+          .markdown-preview code { background-color: rgba(255,255,255,0.1); color: #E5E7EB; padding: .2em .4em; margin: 0; font-size: 85%; border-radius: 6px; }
+          .markdown-preview pre { background-color: #000000; padding: 1rem; border-radius: 0.375rem; overflow-x: auto; margin-bottom: 1em; }
+          .markdown-preview pre code { padding: 0; background-color: transparent; }
+          .markdown-preview img { max-width: 100%; height: auto; display: block; margin: 1em auto; background-color: transparent; border-radius: 0.5rem; }
+          .markdown-preview ul, .markdown-preview ol { padding-left: 2em; margin-bottom: 1em; color: #D1D5DB; }
+          .markdown-preview blockquote { padding: 0 1em; color: #9CA3AF; border-left: 0.25em solid #4B5563; margin-bottom: 1em; }
+          .blinking-cursor { animation: blink 1s step-end infinite; }
+          @keyframes blink { from, to { color: transparent; } 50% { color: inherit; } }
+          @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+          .animate-fadeIn { animation: fadeIn 0.5s ease-out forwards; opacity: 0; }
         `}</style>
-      <div className="flex justify-between items-center p-4 border-b border-gray-700">
-        <div className="flex items-end">
-          <TabButton isActive={activeTab === 'preview'} onClick={() => setActiveTab('preview')}>
-            <EyeIcon /> Preview
-          </TabButton>
-          <TabButton isActive={activeTab === 'code'} onClick={() => setActiveTab('code')}>
-            <CodeIcon /> Code
-          </TabButton>
+      <div className="flex justify-between items-center p-2.5 border-b border-white/10 flex-shrink-0">
+        <div className="flex items-center gap-2 p-1 bg-black/30 rounded-lg">
+          <TabButton isActive={activeTab === 'preview'} onClick={() => setActiveTab('preview')}><EyeIcon /> Preview</TabButton>
+          <TabButton isActive={activeTab === 'code'} onClick={() => setActiveTab('code')}><CodeIcon /> Code</TabButton>
         </div>
+        
         {markdown && !isLoading && (
-          <button
-            onClick={handleCopy}
-            className="p-2 bg-gray-700 rounded-md hover:bg-gray-600 transition text-gray-300 flex items-center gap-2 text-sm"
-            aria-label="Copy markdown to clipboard"
-          >
-            {copied ? 'Copied!' : <><ClipboardIcon /> Copy Code</>}
-          </button>
+          <div className="flex items-center gap-3">
+             <div className="flex items-center gap-1">
+                <Tooltip text="Undo (Ctrl+Z)">
+                    <button onClick={onUndo} disabled={!canUndo} className="p-1.5 rounded-md hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"><UndoIcon /></button>
+                </Tooltip>
+                 <Tooltip text="Redo (Ctrl+Y)">
+                    <button onClick={onRedo} disabled={!canRedo} className="p-1.5 rounded-md hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"><RedoIcon /></button>
+                </Tooltip>
+              </div>
+            <Tooltip text="Copy Markdown Code" position="left">
+              <button onClick={handleCopy} className="px-3 py-2 bg-white/5 rounded-md hover:bg-white/10 transition text-gray-300 flex items-center gap-2 text-sm border border-white/10" aria-label="Copy markdown">
+                <ClipboardIcon /> {copied ? 'Copied!' : 'Copy'}
+              </button>
+            </Tooltip>
+          </div>
         )}
       </div>
       
-      <div className="relative bg-gray-900 flex-grow min-h-[400px] lg:min-h-0 flex items-start justify-center">
-        <div className="w-full h-full max-h-[calc(100vh-400px)] overflow-auto">
-             {renderContent()}
-        </div>
+      <div className="relative flex-grow min-h-0 flex items-center justify-center overflow-hidden rounded-b-lg">
+        <div className="w-full h-full overflow-auto">{renderContent()}</div>
       </div>
       
        {isChatModeEnabled && markdown && !isLoading && (
-         <div className="p-4 border-t border-gray-700">
-           <form onSubmit={handleRefineSubmit}>
-              <label htmlFor="refinement" className="text-sm font-medium text-gray-300 mb-2 block">
-                Want to make a change?
+         <div className="p-3 border-t border-white/10 bg-black/30 rounded-b-lg flex-shrink-0">
+           <div className="flex justify-between items-center mb-2">
+            <label htmlFor="refinement" className="text-sm font-medium text-gray-300">
+                Refine your design
               </label>
+           </div>
+           <form onSubmit={handleRefineSubmit}>
               <div className="relative">
-                <textarea
+                <input
                   id="refinement"
                   value={refinementPrompt}
                   onChange={(e) => setRefinementPrompt(e.target.value)}
-                  placeholder="e.g., 'make the background dark blue' or 'change the animation to be slower'"
+                  placeholder="e.g., 'make the background dark blue' or 'change the animation'"
                   disabled={isRefining}
-                  className="w-full bg-gray-800 border border-gray-600 rounded-md p-2 pr-20 text-gray-200 focus:ring-purple-500 focus:border-purple-500 transition resize-none"
-                  rows={2}
+                  className="w-full bg-black/50 border border-white/10 rounded-md p-2.5 pr-12 text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                 />
-                <button 
-                  type="submit"
-                  disabled={isRefining || !refinementPrompt.trim()}
-                  className="absolute right-2 bottom-2 bg-purple-600 text-white p-2 rounded-md hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
-                  aria-label="Refine SVG"
-                >
+                <button type="submit" disabled={isRefining || !refinementPrompt.trim()} className="absolute right-1.5 top-1/5 flex items-center justify-center h-8 w-8 -translate-y-1/8 bg-blue-600 text-white p-1.5 rounded-md hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors" aria-label="Refine SVG" style={{top: '50%', transform: 'translateY(-50%)'}}>
                   <SendIcon />
                 </button>
               </div>

@@ -3,12 +3,41 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>GitHub Profile Breakout SVG Generator</title>
+    <title>AI Interactive README Generator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+      :root {
+        --background-color: #0A0A0A;
+        --grid-color: rgba(255, 255, 255, 0.05);
+        --grid-size: 30px;
+      }
       body {
+        font-family: 'Inter', sans-serif;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
+        background-color: var(--background-color);
+        background-image:
+          linear-gradient(var(--grid-color) 1px, transparent 1px),
+          linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+        background-size: var(--grid-size) var(--grid-size);
+        overflow: hidden;
+      }
+      .glow-effect {
+        position: absolute;
+        pointer-events: none;
+        z-index: -1;
+        top: 50%;
+        left: 50%;
+        width: 1500px;
+        height: 900px;
+        transform: translate(-50%, -50%);
+        background-image: radial-gradient(circle at 30% 30%, rgba(56, 189, 248, 0.15), transparent 40%), /* Light Blue */
+                          radial-gradient(circle at 70% 70%, rgba(139, 92, 246, 0.15), transparent 40%); /* Violet */
+        filter: blur(120px);
+        opacity: 0.7;
       }
     </style>
 <script type="importmap">
@@ -28,7 +57,8 @@
 }
 </script>
 </head>
-  <body class="bg-gray-900">
+  <body>
+    <div class="glow-effect"></div>
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>
